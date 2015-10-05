@@ -85,7 +85,7 @@ class ATM:
     def create_account(self, account, card):
 
         #The default value is the account name prepended to ".card" ("<account>.card"). For example, if the account name was 55555, the default card file is "55555.card".
-        is card is None:
+        if card is None:
             card = "%s.card" % account
 
         with open(card, 'w') as f:
