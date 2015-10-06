@@ -53,12 +53,12 @@ except IOError:
 #      * If the message is authentic, decrypts and prints out the message.
 #
 # ----------------------------------------------------------------------------
-serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-serversocket.bind(('localhost', 8089))
-serversocket.listen(1)
+channel = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+channel.bind(('localhost', 3000))
+channel.listen(1)
 
 while True:
-    connection, address = serversocket.accept()
+    connection, address = channel.accept()
     c_tmp = connection.recv(256)
     if (len(c_tmp) > 0) and (len(c_tmp) < 256):
         h_tag = c_tmp[0:32]
