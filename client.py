@@ -72,6 +72,6 @@ hash.update(c_msg)
 
 packet = hash.hexdigest() + binascii.hexlify(c_msg)
 
-clientsocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-clientsocket.connect(('localhost', 8089))
-clientsocket.send(packet)
+channel = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+channel.connect(('localhost', 3000))
+channel.send(packet)
