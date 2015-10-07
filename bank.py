@@ -3,6 +3,10 @@ from optparse import OptionParser
 import os.path
 import signal
 import json
+from Crypto.Hash import HMAC
+from Crypto.Cipher import AES
+from Crypto import Random
+import binascii, socket
 
 # Custom error code 255 for any invalid command-line options.
 class BankParser(OptionParser):
@@ -19,14 +23,25 @@ def main():
 
 	(options, args) = parser.parse_args()
 
-	# Check whether authentication file exist, if not create it.	
+	#Check whether authentication file exist, if not create it. Generate two 128-bit key, one for authentication and one for encryption.The AES block size is always 16-bytes (128-bits). These are written to the file bank.auth in hexadecimal form.	
 	if os.path.isfile(options.AUTH_FILE):
 		exit(255) 
 	else:
-		auth_file = open(options.AUTH_FILE, 'w')
-		auth_file.write(os.urandom(16))		
-		print "created"
+		key_enc = Random.new().read(AES.block_size)
+		key_mac = Random.new().read(AES.block_size)
 
+		try:
+			fo = open(options.AUTH_FILE, 'w')
+			fo.write(binascii.hexlify(key_enc))
+			fo.write(binascii.hexlify(key_mac))
+			fo.close()
+			print "created"
+		except IOError:
+			print ('Cannot find file: bank.auth')
+			exit(255)
+	
+				
+		
 if __name__ == "__main__":
 	main()
 
