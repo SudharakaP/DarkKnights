@@ -1,20 +1,34 @@
 #!/usr/bin/python
 
+#Script to implement ATM functionality for Coursera Captsone project
+#https://builditbreakit.org/static/doc/fall2015/spec/atm.html
+#Author: J. Roturier (apart from marked, borrowed bits)
+
 import sys
+import os
+import json
 import re
+import binascii
+import socket
+import datetime
 from optparse import OptionParser
+from Crypto.Hash import HMAC
+from Crypto.Cipher import AES
+from Crypto import Random
 
 
-#####################################################################################################################
+#--------------------------------------------------------------------------------------------------------------------
 #Helper functions: These might better located in a separate module as the bank may have to do some validation as well
-#####################################################################################################################
+#--------------------------------------------------------------------------------------------------------------------
 
 def is_valid_amount_format(amount, max_amount=4294967295.99):
 
     """Balances and currency amounts are specified as a number indicating a whole amount and a fractional input separated by a period.
     The fractional input is in decimal and is always two digits and thus can include a leading 0 (should match /[0-9]{2}/).
-    The interpretation of the fractional amount v is that of having value equal to v/100 of a whole amount (akin to cents and dollars in US currency). 
-    Command line input amounts are bounded from 0.00 to 4294967295.99 inclusively but an account may accrue any non-negative balance over multiple transactions."""
+    The interpretation of the fractional amount v is that of having value equal to v/100 of a whole amount 
+    (akin to cents and dollars in US currency).
+    Command line input amounts are bounded from 0.00 to 4294967295.99 inclusively
+    but an account may accrue any non-negative balance over multiple transactions."""
 
     pattern = re.compile(r'^(0|[1-9][0-9]*)(\.[0-9]{2})?$')
     if not re.match(pattern, amount) or float(amount) > max_amount:
@@ -24,7 +38,8 @@ def is_valid_amount_format(amount, max_amount=4294967295.99):
 
 def is_valid_account_format(account):
 
-    """Account names are restricted to same characters as file names but they are inclusively between 1 and 250 characters of length, and "." and ".." are valid account names."""
+    """Account names are restricted to same characters as file names
+    but they are inclusively between 1 and 250 characters of length, and "." and ".." are valid account names."""
 
     pattern = re.compile(r'^[_\-\.0-9a-z]{1,250}$')
     if not re.match(pattern, account):
@@ -33,7 +48,8 @@ def is_valid_account_format(account):
 
 def is_valid_filename_format(file_name):
 
-    """File names are restricted to underscores, hyphens, dots, digits, and lowercase alphabetical characters (each character should match /[_\-\.0-9a-z]/).
+    """File names are restricted to underscores, hyphens, dots, digits, and lowercase alphabetical characters 
+    (each character should match /[_\-\.0-9a-z]/).
      File names are to be between 1 and 255 characters long. The special file names "." and ".." are not allowed."""
 
     if file_name in ['.', '..']:
@@ -59,9 +75,10 @@ def is_valid_ip_address(ip_address):
         return False
     return True
 
-######################
+
+#---------------------
 #Parse ATM CLI options
-######################
+#---------------------
 
 class ATMOptionParser(OptionParser):
 
@@ -70,21 +87,27 @@ class ATMOptionParser(OptionParser):
             sys.stderr.write(msg)
         sys.exit(255)
 
-#############################
-#Offload work to Bank server
-#TODO: must agree on Protocol
-#############################
+#-----------------------------------------------------------------------------------------
+#ATM class that offloads work to Bank server, which will return 255 or JSON-encoded string
+#-----------------------------------------------------------------------------------------
+
 
 class ATM:
 
     def __init__(self, ip_address=None, port=None, auth_file=None):
-        self.ip_address = ip_address
-        self.port = port
-        self.auth_file = auth_file #Use this to encrypt and/or generate card file?
 
-    def create_account(self, account, card):
+        self.bank_ip_address = ip_address
+        self.bank_port = port
+        self.auth_file = auth_file #TODO: Use this to encrypt and/or generate card file
 
-        #The default value is the account name prepended to ".card" ("<account>.card"). For example, if the account name was 55555, the default card file is "55555.card".
+
+    def create_card(self, account, card):
+
+        """Create card. Spec: Card files are created when atm is invoked with -n to create a new account.
+        This must happen afer the bank has confirmed that the account does not already exist.
+        The default value is the account name prepended to ".card" ("<account>.card").
+        For example, if the account name was 55555, the default card file is "55555.card"."""
+
         if card is None:
             card = "%s.card" % account
 
@@ -97,16 +120,18 @@ class ATM:
 
     def is_valid_account(self, account, card):
 
-        """FIXME: this will have to be hardened"""
+        """Check that account matches associated card.
+        FIXME: this will have to be hardened using the auth file."""
 
-        #The default value is the account name prepended to ".card" ("<account>.card"). For example, if the account name was 55555, the default card file is "55555.card".
+        #The default value is the account name prepended to ".card" ("<account>.card").
+        #For example, if the account name was 55555, the default card file is "55555.card".
         if card is None:
             card = "%s.card" % account
 
         card_info = None
         msg = None
         try:
-            card_file = open(card, 'rb')
+            card_file = open(card, 'r')
         except IOError as e:
             msg = '%s: %s' % (e.strerror, card)
             return (False, msg)
@@ -118,21 +143,115 @@ class ATM:
                 return (False, msg)
             return (True, 'OK - but probably not really :-)')
 
+    def sanitize_query(self, options=None):
 
-    def establish_secure_channel(self):
-    #TODO...
-        pass
+        """Sanitize query by transforming relevant options from options object into JSON-encoded string."""
 
+        query = dict(zip(['account', 'new', 'deposit', 'withdraw', 'get', 'new'], 
+                        [options.account, options.new, options.deposit, options.withdraw, options.get, options.new]
+                        ))
+        print query
+        return json.dumps(query)
 
-    def withdraw(self, amount):
-        pass
+    def prepare_query(self, p_msg=None):
 
-    def deposit(self, amount):
-        pass
+        """Suggestion on how to prepare plain message query to send to bank. Taken from:
+        #  Source:    client.py
+        #  Author:    Keith R. Gover"""
 
-    def get_current_balance(self, amount):
-        pass
+        try:
+            fi = open(self.auth_file, 'r')
+            k_tmp = binascii.unhexlify(fi.read())
+            fi.close()
+        except IOError:
+            sys.stderr.write('Cannot find file: %s' % self.auth_file) #stderr rather than stdout as per specs
+            sys.exit(255)
 
+        # ----------------------------------------------------------------------------
+        #  We are using "encrypt then authenticate" since this provides CCA security.
+        #  This code does the following:
+        #
+        #      * Break the contents of the bank.auth file into 2 128-bit keys.
+        #
+        #      * Do the encryption of the message using an AES block cipher in cipher
+        #        feedback mode (CFB).  The message includes a 26-byte datetime stamp
+        #        that the bank can use as a packet ID to prevent replay attacks.
+        #
+        #      * Takes the encrypted message and runs it through an HMAC hash function
+        #        so we can be certain it has not been altered in transit.
+        #
+        #      * Create packet for transmission in hexadecimal form.  The hash tag is
+        #        already in hex but the ciphertext needs to be converted.
+        # ----------------------------------------------------------------------------
+        key_enc = k_tmp[0:AES.block_size]
+        key_mac = k_tmp[AES.block_size:]
+
+        iv = Random.new().read(AES.block_size)
+        cipher = AES.new(key_enc, AES.MODE_CFB, iv)
+        c_msg = iv + cipher.encrypt(p_msg + str(datetime.datetime.now())) 
+
+        hash = HMAC.new(key_mac)
+        hash.update(c_msg)
+
+        pkt = hash.hexdigest() + binascii.hexlify(c_msg)
+
+        return pkt
+
+    def communicate_with_bank(self, packet=None):
+
+        """Send validated, encrypted and authenticated query to bank.
+        Based on kgover's client.py code but adds call to receive response.
+        Expects the encrypted and authenticated response to be a JSON-encoded string."""
+
+        # Create a socket (SOCK_STREAM means a TCP socket)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+        try:
+            # Connect to server and send data
+            sock.connect((self.bank_ip_address, self.bank_port))
+            sock.send(packet + "\n")#or sendall?
+
+            # Receive data from the server and shut down
+            pkt = sock.recv(1024)
+        finally:
+            sock.close()
+
+        #---------------------------------------------------------------------------
+        #      * Extract the hash tag from the incoming packet.  This needs to remain
+        #        in hexadecimal form.
+        #
+        #      * Extract the IV and encrypted message from the incoming packet.  This
+        #        needs to be converted to binary.
+        #
+        #      * Run the hash function on the full ciphertext and compares it to the
+        #        hash tag extracted in the step above.
+        #
+        #      * If the message is authentic, decrypt it. 
+        #       j3r's note: There should not be any need for packet ID
+        #----------------------------------------------------------------------------
+
+        if (len(pkt) > 0) and (len(pkt) < 1024):
+            h_tag = pkt[0:32]
+            c_tmp = binascii.unhexlify(pkt[32:])
+            iv = c_tmp[0:AES.block_size]
+
+            c_msg = c_tmp[AES.block_size:]
+
+            hash = HMAC.new(key_mac)
+            hash.update(c_tmp)
+            cipher = AES.new(key_enc, AES.MODE_CFB, iv)
+
+            if (h_tag == hash.hexdigest()):
+                #TODO: catch potential error
+                p_tmp = cipher.decrypt(c_msg)
+                #There should not be any need for packet ID on the way back.
+                #pkt_id = p_tmp[-26:]
+                #p_msg = p_tmp[:-26]
+                #return p_msg
+                return p_tmp
+            else:
+                sys.stderr.write('protocol_error\n')
+                sys.exit(255)
 
 def main():
 
@@ -148,6 +267,11 @@ def main():
     parser.add_option("-c", action="store", dest="card")
 
     (options, args) = parser.parse_args()
+
+    #-----------------------
+    #Basic input validation
+    #-----------------------
+
     #Check that length of string arguments is not over 4096 characters
     for option in [options.account, options.new, options.deposit, options.withdraw, options.ip_address, options.auth, options.card] + args:
         if isinstance(option, str) and len(option) > 4096:
@@ -185,34 +309,61 @@ def main():
 
     #Check that potential deposit format is valid
     if options.deposit:
-        if not is_valid_amount_format(options.deposit) or not float(options.deposit) >= 10:
+        if not is_valid_amount_format(options.deposit) or not float(options.deposit) > 0:
             parser.error('Invalid deposit amount: %s' % options.deposit)
 
     #Check that potential withdrawal format is valid
     if options.withdraw:
-        if not is_valid_amount_format(options.withdraw) or not float(options.withdraw) >= 10:
+        if not is_valid_amount_format(options.withdraw) or not float(options.withdraw) > 0:
             parser.error('Invalid withdrawal amount: %s' % options.withdraw)
 
     #Validate the card file format
     if options.card and not is_valid_filename_format(options.card):
         parser.error('Invalid card file format: %s' % options.card)
 
-    #Create ATM instance that will do account validation and communicate with the bank upon successful validation
+    #Validate that the specified card file does not already exist for new accounts
+    if options.new and options.card and os.path.isfile(options.card):
+        parser.error('Card already exists: %s' % options.card)
+
+    #------------------
+    #Ccre functionality
+    #------------------
+
+    #Create ATM instance that may communicate with the bank upon potential successful card/account validation
     atm = ATM(ip_address=options.ip_address, port=options.port, auth_file=options.auth)
 
-    #Create new card for a potential new account
-    if options.new:
-        created_account = atm.create_account(account=options.account, card=options.card)
-        if not created_account:
-            parser.error('Could not create account.')
 
-    #Validate account by checking the card file (it seems that the bank does not need to know about the card file)
-    valid_account, msg = atm.is_valid_account(account=options.account, card=options.card)
-    if not valid_account:
-        parser.error(msg)
+    #Actual account validation against card for withdraw, deposit, get (balance) operations
+    if (options.withdraw) or (options.deposit) or (options.get):
+        valid_account, msg = atm.is_valid_account(account=options.account, card=options.card)
+        if not valid_account:
+            parser.error(msg)
 
-    #TODO:
-    #atm.establish_secure_channel()
+    #Prepare for communication
+    query = atm.sanitize_query(options=options)
+    packet = atm.prepare_query(p_msg=query)
+
+    #Communicate with server and post-process decrypted JSON response
+    try:
+        raw_response = atm.communicate_with_bank(packet=packet)
+    except socket.error:
+        sys.stderr.write('Could not communicate with server.')
+        sys.exit(255)
+    try:
+        response = json.loads(raw_response)
+    except TypeError:
+        sys.stderr.write('Could not decode server response.')
+        sys.exit(255)
+    #255 means failure, anything else should be printed to stdout
+    if response == 255:
+        sys.exit(255)
+    print response
+
+    #Create new card for new account successfully created
+    if response != 255 and options.new:
+        created_card = atm.create_card(account=options.account, card=options.card)
+        if not created_card:
+            parser.error('Could not create card.')
 
 
 if __name__ == "__main__":
