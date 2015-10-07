@@ -30,25 +30,27 @@ def main():
 if __name__ == "__main__":
 	main()
 
-# Currently this method takes a dictionary "options" and checks whether it meets the specified requirements. If so returns/prints a JSON object, otherwise return 255.
+# Currently this method takes a reqeust sent by the ATM in JSON and checks whether it meets the specified requirements. If so returns/prints a JSON object, otherwise return 255.
 
-def atm_request(options):
+customers = {}
 
-	customers = {}
+def atm_request(atm_request):
 
-	account_name = options.account
+	request = json.loads(atm_request)
+
+	account_name = request['account']
 
 	# Creation of new account if the given account does not exist(balance > 10 already taken care of in atm file).
-	if (options.new is not None) and (account_name not in customers):
-		customers[account_name] = options.new
-		summary = json.dumps({"account":account_name, "initial-balance": options.new})
+	if (request['new'] is not None) and (account_name not in customers):
+		customers[account_name] = request['new']
+		summary = json.dumps({"account":account_name, "initial-balance": request['new']})
 		print summary
 		return summary
 	else:
 		return 255
 
 	# Read balance if account already exist.
-	if (options.get is not None) and (account_name in customers):
+	if (request['get'] is not None) and (account_name in customers):
 		summary = json.dumps({"account":account_name, "balance": customers[account_name]})
 		print summary
 		return summary
@@ -56,8 +58,8 @@ def atm_request(options):
 		return 255
 
 	# Deposit specified amount if account already exist.
-	if (options.deposit is not None) and (account_name in customers):
-		customers[account_name] += options.deposit
+	if (request['deposit'] is not None) and (account_name in customers):
+		customers[account_name] += int(request['deposit'])
 		summary = json.dumps({"account":account_name, "deposit": customers[account_name]})
 		print summary
 		return summary
@@ -65,8 +67,8 @@ def atm_request(options):
 		return 255
 
 	# Withdraw specified amount if account already exist.
-	if (options.withdraw is not None) and (account_name in customers) and (options.withdraw <= customers[account_name]):
-		customers[account_name] -= options.deposit
+	if (request['withdraw'] is not None) and (account_name in customers) and (request['withdraw'] <= customers[account_name]):
+		customers[account_name] -= int(request['deposit'])
 		summary = json.dumps({"account":account_name, "deposit": customers[account_name]})
 		print summary
 		return summary
