@@ -2,7 +2,7 @@
 #  Source:    server.py
 #  Author:    Keith R. Gover
 #  Date:      October 05, 2015
-#  Modified:  October 06, 2015
+#  Modified:  October 07, 2015
 #  File:      Python script for doing authenticated encryption.  This is the
 #             server side (bank) that:
 #                 * Generate the encryption keys & writes them to bank.auth.
@@ -15,6 +15,8 @@
 from Crypto.Hash import HMAC
 from Crypto.Cipher import AES
 from Crypto import Random
+from hmac import compare_digest
+from helper import print_flush
 import binascii, socket
 
 # Maintain a list of previous date/time stamps
@@ -41,9 +43,10 @@ except IOError:
 #  This block does the following, note the incoming packet is in a
 #  hexadecimal form:
 #
-#      * Continually isten to the port and wait for a packet to arrive.  This
-#        code currently is only allowing one connection.  Will need to expand
-#        so multiple ATM's can connect.
+#      * Continually isten to the port and wait for a packet to arrive.
+#
+#      * When a packet is received, grab up to 1024-bytes which should be
+#        longer than the longest possible command plus the packet ID.
 #
 #      * Extract the hash tag from the incoming packet.  This needs to remain
 #        in hexadecimal form.
@@ -52,15 +55,27 @@ except IOError:
 #        needs to be converted to binary.
 #
 #      * Run the hash function on the full ciphertext and compares it to the
-#        hash tag extracted in the step above.
+#        hash tag extracted in the step above.  The comparison is done using
+#        a method from the hmac library that does an equal time compare to
+#        guard against timing attacks.
 #
 #      * If the message is authentic, decrypt it and extract the packet ID
-#        and the plaintext message.
+#        and the plaintext message.  The packet ID is the last 26-bytes of
+#        decrypted message.
 #
 #      * If the packet ID does not match any previous packet ID's, then
-#        print out the message.  This step prevents replay attacks.
+#        print out the message.  This step guard against replay attacks.
 #
-#  Need to prevent multiple banks from being opened.
+#      * All messages are printed using a function that adds a carriage
+#        return to the end of the string and then flushes the I/O buffer.
+#
+#      * Successful exit requires exit with code 0
+#
+#  TODO:
+#      * The code currently only allows one connection.  Ww will need to
+#        expand this so multiple ATM's can connect.
+#      * Need to prevent multiple banks from being opened.
+#
 # ----------------------------------------------------------------------------
 channel = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 channel.bind(('localhost', 3000))
@@ -68,31 +83,34 @@ channel.listen(1)
 
 while True:
     connection, address = channel.accept()
-    pkt = connection.recv(256)
-    if (len(pkt) > 0) and (len(pkt) < 256):
+    pkt = connection.recv(1024)
+    if (len(pkt) > 0) and (len(pkt) < 1024):
         h_tag = pkt[0:32]
         c_tmp = binascii.unhexlify(pkt[32:])
         
-        iv = c_tmp[0:AES.block_size]
+        iv = c_tmp[:AES.block_size]
         c_msg = c_tmp[AES.block_size:]
 
         hash = HMAC.new(key_mac)
         hash.update(c_tmp)
         cipher = AES.new(key_enc, AES.MODE_CFB, iv)
-        
-        if (h_tag == hash.hexdigest()):
+
+        if compare_digest(h_tag, hash.hexdigest()):
             p_tmp = cipher.decrypt(c_msg)
             pkt_id = p_tmp[-26:]
             p_msg = p_tmp[:-26]
             if pkt_id not in id_list:
                 if p_msg == 'eject eject eject':
-                    print '\nGoodbye!\n'
+                    print_flush('Goodbye!')
                     break
                 else:
                     id_list.append(pkt_id)
-                    print p_msg
+                    print_flush(p_msg)
             else:
-                print('protocol_error\n')
+                print_flush('protocol_error')
         else:
-            print('protocol_error\n')
-    
+            print_flush('protocol_error')
+    else:
+        print_flush('protocol_error')
+
+exit(0)
