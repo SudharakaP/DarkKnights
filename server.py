@@ -91,7 +91,8 @@ while True:
                 else:
                     id_list.append(pkt_id)
                     print p_msg
+            else:
+                print('protocol_error\n')
         else:
-            print('Error processing: packet.dat')
-            exit(255)
+            print('protocol_error\n')
     
