@@ -64,7 +64,7 @@ def atm_request(options):
 	else:
 		return 255
 
-	# Deposit specified amount if account already exist.
+	# Withdraw specified amount if account already exist.
 	if (options.withdraw is not None) and (account_name in customers) and (options.withdraw <= customers[account_name]):
 		customers[account_name] -= options.deposit
 		summary = json.dumps({"account":account_name, "deposit": customers[account_name]})
