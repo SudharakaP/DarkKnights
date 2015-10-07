@@ -50,7 +50,9 @@ print_flush(p_msg)
 #  We are using "encrypt then authenticate" since this provides CCA security.
 #  This code does the following:
 #
-#      * Extract the 2 128-bit keys from the bank.auth file.
+#      * Extract the 2 128-bit keys from the bank.auth file.  These were
+#        written to the files in hexadecimal and need to be converted back to
+#        binary form.
 #
 #      * Create an initialization vector (IV) for the cipher.  It is very
 #        important that same IV is not used with the same key more than once.
@@ -68,8 +70,7 @@ print_flush(p_msg)
 #        so we can be certain it has not been altered in transit.  The default
 #        hash function used for HMAC is MD5.
 #
-#      * Create packet for transmission in hexadecimal form.  The hash tag is
-#        already in hex but the ciphertext needs to be converted.
+#      * Create packet for transmission.
 #
 #      * Send the packet out on the port.
 #
@@ -90,7 +91,7 @@ c_msg = iv + cipher.encrypt(p_msg + str(datetime.datetime.now()))
 hash = HMAC.new(key_mac)
 hash.update(c_msg)
 
-pkt = hash.hexdigest() + binascii.hexlify(c_msg)
+pkt = hash.digest() + c_msg
 
 channel = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 channel.connect(('localhost', 3000))
