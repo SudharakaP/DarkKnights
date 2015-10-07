@@ -1,3 +1,8 @@
+###############################################################################
+# Script to implement ATM functionality for Coursera Captsone project
+# https://builditbreakit.org/static/doc/fall2015/spec/atm.html
+###############################################################################
+
 import sys
 from optparse import OptionParser
 import os.path
@@ -22,8 +27,13 @@ def main():
 	parser.add_option('-s', action = 'store', dest = 'AUTH_FILE', default = 'bank.auth')
 
 	(options, args) = parser.parse_args()
-
-	#Check whether authentication file exist, if not create it. Generate two 128-bit key, one for authentication and one for encryption.The AES block size is always 16-bytes (128-bits). These are written to the file bank.auth in hexadecimal form.	
+	
+	###############################################################################
+	# Check whether authentication file exist, if not create it. 
+	# Generate two 128-bit key, one for authentication and one for encryption.
+	# The AES block size is always 16-bytes (128-bits). 
+	# These are written to the file bank.auth in hexadecimal form.
+	###############################################################################
 	if os.path.isfile(options.AUTH_FILE):
 		exit(255) 
 	else:
@@ -40,7 +50,42 @@ def main():
 			print ('Cannot find file: bank.auth')
 			exit(255)
 
-	# Keith's code for listener. Refer server.py for documentation. 
+	###############################################################################
+	#  This block does the following, note the incoming packet is in a
+	#  hexadecimal form:
+	#
+	#      * Continually isten to the port and wait for a packet to arrive.
+	#
+	#      * When a packet is received, grab up to 1024-bytes which should be
+	#        longer than the longest possible command plus the packet ID.
+	#
+	#      * Extract the 16-byte hash tag from the incoming packet.
+	#
+	#      * Extract the IV and encrypted message from the incoming packet.
+	#
+	#      * Run the hash function on the full ciphertext and compares it to the
+	#        hash tag extracted in the step above.  The comparison is done using
+	#        a method from the hmac library that does an equal time compare to
+	#        guard against timing attacks.
+	#
+	#      * If the message is authentic, decrypt it and extract the packet ID
+	#        and the plaintext message.  The packet ID is the last 26-bytes of
+	#        decrypted message.
+	#
+	#      * If the packet ID does not match any previous packet ID's, then
+	#        print out the message.  This step guard against replay attacks.
+	#
+	#      * All messages are printed using a function that adds a carriage
+	#        return to the end of the string and then flushes the I/O buffer.
+	#
+	#      * Successful exit requires exit with code 0
+	#
+	#  TODO:
+	#      * The code currently only allows one connection.  Ww will need to
+	#        expand this so multiple ATM's can connect.
+	#      * Need to prevent multiple banks from being opened.
+	#
+	################################################################################
 
 	channel = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	channel.bind(('localhost', options.PORT))
@@ -76,7 +121,10 @@ def main():
 if __name__ == "__main__":
 	main()
 
-# Currently this method takes a reqeust sent by the ATM in JSON and checks whether it meets the specified requirements. If so returns/prints a JSON object, otherwise return 255.
+###############################################################################################################
+# This method takes a reqeust sent by the ATM in JSON and checks whether it meets the specified requirements. 
+# If so returns/prints a JSON object, otherwise return 255.
+###############################################################################################################
 
 customers = {}
 
