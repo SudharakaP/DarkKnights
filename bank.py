@@ -39,9 +39,40 @@ def main():
 		except IOError:
 			print ('Cannot find file: bank.auth')
 			exit(255)
-	
-				
+
+	# Keith's code for listener. Refer server.py for documentation. 
+
+	channel = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	channel.bind(('localhost', options.PORT))
+	channel.listen(1)
+
+	while True:
+	    connection, address = channel.accept()
+	    pkt = connection.recv(256)
+	    if (len(pkt) > 0) and (len(pkt) < 256):
+		h_tag = pkt[0:32]
+		c_tmp = binascii.unhexlify(pkt[32:])
 		
+		iv = c_tmp[0:AES.block_size]
+		c_msg = c_tmp[AES.block_size:]
+
+		hash = HMAC.new(key_mac)
+		hash.update(c_tmp)
+		cipher = AES.new(key_enc, AES.MODE_CFB, iv)
+		
+		if (h_tag == hash.hexdigest()):
+		    p_tmp = cipher.decrypt(c_msg)
+		    pkt_id = p_tmp[-26:]
+		    p_msg = p_tmp[:-26]
+		    if pkt_id not in id_list:
+		        atm_request(p_msg)
+		        id_list.append(pkt_id)
+		        print p_msg
+		    else:
+		        print('protocol_error\n')
+		else:
+		    print('protocol_error\n')
+	
 if __name__ == "__main__":
 	main()
 
