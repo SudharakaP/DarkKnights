@@ -2,19 +2,21 @@
 #  Source:    client.py
 #  Author:    Keith R. Gover
 #  Date:      October 05, 2015
-#  Modified:  October 06, 2015
+#  Modified:  October 07, 2015
 #  File:      Python script for doing authenticated encryption.  This is the
 #             client side (ATM) that:
 #                 * Reads in the message to be sent.
 #                 * Reads the bank.auth file to get the encryption keys.
-#                 * Generates the packet containing a hash tag of the
-#                   encrypted message and the encrypted message.
+#                 * Encrypt and hash the message.
+#                 * Create a packet containing the hash tag and the encrypted
+#                   message.
 #                 * Send the packet out to the bank.
 #  Remarks:   University of Maryland: Cybersecurity Capstone Project
 # ----------------------------------------------------------------------------
 from Crypto.Hash import HMAC
 from Crypto.Cipher import AES
 from Crypto import Random
+from helper import print_flush
 import binascii, socket, sys, datetime
 
 # Get the command to be sent from the command line.
@@ -41,25 +43,41 @@ except IOError:
     print('Cannot find file: bank.auth')
     exit(255)
 
-print '\n' + p_msg + '\n'
+# Print the command we are sending to stdout
+print_flush(p_msg)
 
 # ----------------------------------------------------------------------------
 #  We are using "encrypt then authenticate" since this provides CCA security.
 #  This code does the following:
 #
-#      * Break the contents of the bank.auth file into 2 128-bit keys.
+#      * Extract the 2 128-bit keys from the bank.auth file.
+#
+#      * Create an initialization vector (IV) for the cipher.  It is very
+#        important that same IV is not used with the same key more than once.
+#        Doing so can lead to extremely vulnerable code. 
 #
 #      * Do the encryption of the message using an AES block cipher in cipher
-#        feedback mode (CFB).  The message includes a 26-byte datetime stamp
-#        that the bank can use as a packet ID to prevent replay attacks.
+#        feedback mode (CFB).  CFB mode is similar to CBC mode but allows the
+#        cipher to be used as a stream cipher.  This makes the code simpler
+#        in that we don't have to encrypt in 16-byte chunks.
 #
-#      * Takes the encrypted message and runs it through an HMAC hash function
-#        so we can be certain it has not been altered in transit.
+#      * The message includes a 26-byte datetime stamp that the bank can use
+#        as a packet ID to guard against replay attacks.
+#
+#      * Take the encrypted message and runs it through an HMAC hash function
+#        so we can be certain it has not been altered in transit.  The default
+#        hash function used for HMAC is MD5.
 #
 #      * Create packet for transmission in hexadecimal form.  The hash tag is
 #        already in hex but the ciphertext needs to be converted.
 #
-#      * Sends the packet out on the port.
+#      * Send the packet out on the port.
+#
+#      * Successful exit requires exit with code 0
+#
+#  TODO:
+#      * We might want to look at using a stronger hash function in the HMAC
+#        like SHA256.
 #
 # ----------------------------------------------------------------------------
 key_enc = k_tmp[0:AES.block_size]
@@ -77,3 +95,5 @@ pkt = hash.hexdigest() + binascii.hexlify(c_msg)
 channel = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 channel.connect(('localhost', 3000))
 channel.send(pkt)
+
+exit(0)
