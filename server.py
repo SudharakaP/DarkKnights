@@ -48,11 +48,9 @@ except IOError:
 #      * When a packet is received, grab up to 1024-bytes which should be
 #        longer than the longest possible command plus the packet ID.
 #
-#      * Extract the hash tag from the incoming packet.  This needs to remain
-#        in hexadecimal form.
+#      * Extract the 16-byte hash tag from the incoming packet.
 #
-#      * Extract the IV and encrypted message from the incoming packet.  This
-#        needs to be converted to binary.
+#      * Extract the IV and encrypted message from the incoming packet.
 #
 #      * Run the hash function on the full ciphertext and compares it to the
 #        hash tag extracted in the step above.  The comparison is done using
@@ -85,8 +83,8 @@ while True:
     connection, address = channel.accept()
     pkt = connection.recv(1024)
     if (len(pkt) > 0) and (len(pkt) < 1024):
-        h_tag = pkt[0:32]
-        c_tmp = binascii.unhexlify(pkt[32:])
+        h_tag = pkt[0:16]
+        c_tmp = pkt[16:]
         
         iv = c_tmp[:AES.block_size]
         c_msg = c_tmp[AES.block_size:]
@@ -95,7 +93,7 @@ while True:
         hash.update(c_tmp)
         cipher = AES.new(key_enc, AES.MODE_CFB, iv)
 
-        if compare_digest(h_tag, hash.hexdigest()):
+        if compare_digest(h_tag, hash.digest()):
             p_tmp = cipher.decrypt(c_msg)
             pkt_id = p_tmp[-26:]
             p_msg = p_tmp[:-26]
