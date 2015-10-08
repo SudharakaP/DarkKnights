@@ -8,6 +8,7 @@ from optparse import OptionParser
 import os.path
 import signal
 import json
+import datetime
 from Crypto.Hash import HMAC
 from Crypto.Cipher import AES
 from Crypto import Random
@@ -17,7 +18,7 @@ import binascii, socket
 
 ###############################################################################################################
 # This method takes a reqeust sent by the ATM in JSON and checks whether it meets the specified requirements. 
-# If so returns/prints a JSON object, otherwise return 255.
+# If so returns a JSON object, otherwise return 255.
 ###############################################################################################################
 
 # Account details (customer name and balance) are stored in this dictionary.
@@ -31,9 +32,8 @@ def atm_request(atm_request):
 
 	# Creation of new account if the given account does not exist(balance > 10 already taken care of in atm file).
 	if (request['new'] is not None) and (account_name not in customers):
-		customers[account_name] = request['new']
+		customers[account_name] = float(request['new'])
 		summary = json.dumps({"account":account_name, "initial-balance": request['new']})
-		print summary
 		return summary
 	else:
 		return 255
@@ -41,29 +41,50 @@ def atm_request(atm_request):
 	# Read balance if account already exist.
 	if (request['get'] is not None) and (account_name in customers):
 		summary = json.dumps({"account":account_name, "balance": customers[account_name]})
-		print summary
 		return summary
 	else:
 		return 255
 
 	# Deposit specified amount if account already exist.
 	if (request['deposit'] is not None) and (account_name in customers):
-		customers[account_name] += int(request['deposit'])
+		customers[account_name] += float(request['deposit'])
 		summary = json.dumps({"account":account_name, "deposit": customers[account_name]})
-		print summary
 		return summary
 	else:
 		return 255
-
 
 	# Withdraw specified amount if account already exist.
 	if (request['withdraw'] is not None) and (account_name in customers) and (request['withdraw'] <= customers[account_name]):
-		customers[account_name] -= int(request['deposit'])
+		customers[account_name] -= float(request['deposit'])
 		summary = json.dumps({"account":account_name, "deposit": customers[account_name]})
-		print summary
 		return summary
 	else:
 		return 255
+
+# Creates the encrypted message that is to be sent to the atm. Borrowed heavily from Keith's client.py
+
+def message_to_atm(p_msg, auth_file):
+	try:
+            fi = open(auth_file, 'r')
+            k_tmp = binascii.unhexlify(fi.read())
+            fi.close()
+        except IOError:
+            sys.stderr.write('Cannot find file: %s' % self.auth_file) 
+            sys.exit(255)
+
+	key_enc = k_tmp[0:AES.block_size]
+        key_mac = k_tmp[AES.block_size:]
+
+        iv = Random.new().read(AES.block_size)
+        cipher = AES.new(key_enc, AES.MODE_CFB, iv)
+        c_msg = iv + cipher.encrypt(p_msg) 
+
+        hash = HMAC.new(key_mac)
+        hash.update(c_msg)
+
+        pkt = hash.digest() + c_msg
+
+	return pkt
 
 # Custom error code 255 for any invalid command-line options.
 class BankParser(OptionParser):
@@ -165,17 +186,19 @@ def main():
 		    pkt_id = p_tmp[-26:]
 		    p_msg = p_tmp[:-26]
 		    if pkt_id not in id_list:
-		        atm_request(p_msg)
-		        id_list.append(pkt_id)
-		        print_flush(p_msg)
+			id_list.append(pkt_id)
+		        message = atm_request(p_msg)
+			print message
+			
+			# Encrypts and sends the message to atm.
+			enc_message = message_to_atm(message, options.AUTH_FILE)
+		     	connection.sendall(enc_message)
 		    else:
 		        print_flush('protocol_error')
 		else:
-		    print_flush('protocol_error')
-		    print 2
+		    print_flush('protocol_error')    
             else:
 	        print_flush('protocol_error')
-		print 3
         exit(0)
 	
 if __name__ == "__main__":
