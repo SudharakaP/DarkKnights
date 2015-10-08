@@ -15,6 +15,56 @@ from hmac import compare_digest
 from helper import print_flush
 import binascii, socket
 
+###############################################################################################################
+# This method takes a reqeust sent by the ATM in JSON and checks whether it meets the specified requirements. 
+# If so returns/prints a JSON object, otherwise return 255.
+###############################################################################################################
+
+# Account details (customer name and balance) are stored in this dictionary.
+customers = {}
+
+def atm_request(atm_request):
+
+	request = json.loads(atm_request)
+
+	account_name = request['account']
+
+	# Creation of new account if the given account does not exist(balance > 10 already taken care of in atm file).
+	if (request['new'] is not None) and (account_name not in customers):
+		customers[account_name] = request['new']
+		summary = json.dumps({"account":account_name, "initial-balance": request['new']})
+		print summary
+		return summary
+	else:
+		return 255
+
+	# Read balance if account already exist.
+	if (request['get'] is not None) and (account_name in customers):
+		summary = json.dumps({"account":account_name, "balance": customers[account_name]})
+		print summary
+		return summary
+	else:
+		return 255
+
+	# Deposit specified amount if account already exist.
+	if (request['deposit'] is not None) and (account_name in customers):
+		customers[account_name] += int(request['deposit'])
+		summary = json.dumps({"account":account_name, "deposit": customers[account_name]})
+		print summary
+		return summary
+	else:
+		return 255
+
+
+	# Withdraw specified amount if account already exist.
+	if (request['withdraw'] is not None) and (account_name in customers) and (request['withdraw'] <= customers[account_name]):
+		customers[account_name] -= int(request['deposit'])
+		summary = json.dumps({"account":account_name, "deposit": customers[account_name]})
+		print summary
+		return summary
+	else:
+		return 255
+
 # Custom error code 255 for any invalid command-line options.
 class BankParser(OptionParser):
 	def error(self, message):
@@ -83,11 +133,14 @@ def main():
 	#      * Successful exit requires exit with code 0
 	#
 	#  TODO:
-	#      * The code currently only allows one connection.  Ww will need to
+	#      * The code currently only allows one connection.  We will need to
 	#        expand this so multiple ATM's can connect.
 	#      * Need to prevent multiple banks from being opened.
 	#
 	################################################################################
+
+	# Maintain a list of previous date/time stamps
+	id_list = []
 
 	channel = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	channel.bind(('localhost', options.PORT))
@@ -119,63 +172,14 @@ def main():
 		        print_flush('protocol_error')
 		else:
 		    print_flush('protocol_error')
+		    print 2
             else:
 	        print_flush('protocol_error')
+		print 3
         exit(0)
 	
 if __name__ == "__main__":
 	main()
-
-###############################################################################################################
-# This method takes a reqeust sent by the ATM in JSON and checks whether it meets the specified requirements. 
-# If so returns/prints a JSON object, otherwise return 255.
-###############################################################################################################
-
-customers = {}
-
-def atm_request(atm_request):
-
-	request = json.loads(atm_request)
-
-	account_name = request['account']
-
-	# Creation of new account if the given account does not exist(balance > 10 already taken care of in atm file).
-	if (request['new'] is not None) and (account_name not in customers):
-		customers[account_name] = request['new']
-		summary = json.dumps({"account":account_name, "initial-balance": request['new']})
-		print summary
-		return summary
-	else:
-		return 255
-
-	# Read balance if account already exist.
-	if (request['get'] is not None) and (account_name in customers):
-		summary = json.dumps({"account":account_name, "balance": customers[account_name]})
-		print summary
-		return summary
-	else:
-		return 255
-
-	# Deposit specified amount if account already exist.
-	if (request['deposit'] is not None) and (account_name in customers):
-		customers[account_name] += int(request['deposit'])
-		summary = json.dumps({"account":account_name, "deposit": customers[account_name]})
-		print summary
-		return summary
-	else:
-		return 255
-
-	# Withdraw specified amount if account already exist.
-	if (request['withdraw'] is not None) and (account_name in customers) and (request['withdraw'] <= customers[account_name]):
-		customers[account_name] -= int(request['deposit'])
-		summary = json.dumps({"account":account_name, "deposit": customers[account_name]})
-		print summary
-		return summary
-	else:
-		return 255
-			
-		
-	
 
 
 	
