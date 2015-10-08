@@ -9,7 +9,7 @@ import sys
 from optparse import OptionParser
 import os.path
 import signal
-import json
+import simplejson as json
 import datetime
 from Crypto.Hash import HMAC
 from Crypto.Cipher import AES
@@ -83,7 +83,7 @@ def is_valid_ip_address(ip_address):
 #  This is a project requirement.
 # ----------------------------------------------------------------------------
 def print_flush (S_in) :
-    print S_in + '\n'
+    print S_in #+ '\n'
     sys.stdout.flush()
 
 ###############################################################################################################
@@ -108,19 +108,19 @@ def atm_request(atm_request):
 
 	# Read balance if account already exist.
 	elif (request['get'] is not None) and (account_name in customers):
-		summary = json.dumps({"account":account_name, "balance": customers[account_name]})
+		summary = json.dumps({"account":account_name, "balance": round(customers[account_name],2)})
 		return summary
 
 	# Deposit specified amount if account already exist.
 	elif (request['deposit'] is not None) and (account_name in customers):
 		customers[account_name] += float(request['deposit'])
-		summary = json.dumps({"account":account_name, "deposit": float(request['deposit'])})
+		summary = json.dumps({"account":account_name, "deposit": round(float(request['deposit']),2)})
 		return summary
 
 	# Withdraw specified amount if account already exist.
-	elif (request['withdraw'] is not None) and (account_name in customers) and (float(request['withdraw']) <= customers[account_name]):
+	elif (request['withdraw'] is not None) and (account_name in customers) and (float(request['withdraw']) <= float(customers[account_name])):
 		customers[account_name] -= float(request['withdraw'])
-		summary = json.dumps({"account":account_name, "withdraw": float(request['withdraw'])})
+		summary = json.dumps({"account":account_name, "withdraw": round(float(request['withdraw']),2)})
 		return summary
 	else:
 		return "255"
@@ -173,10 +173,12 @@ def main():
     	for option in [options.AUTH_FILE] + args:
         	if isinstance(option, str) and len(option) > 4096:
             		parser.error('Argument too long for one of the options.')
+			exit(255)
 
     	# Check that port number format is valid (beyond default validation provided by optparse)
     	if not 1024 <= int(options.PORT) <= 65535:
         	parser.error('Invalid port number: %d' % options.PORT)
+		exit(255)
 	
 	###############################################################################
 	# Check whether authentication file exist, if not create it. 
@@ -266,8 +268,8 @@ def main():
 			id_list.append(pkt_id)
 			message = atm_request(p_msg)
 			if message != '255':
-				print message
-			
+				print_flush(message)
+
 			# Encrypts and sends the message to atm.
 			enc_message = message_to_atm(message, options.AUTH_FILE)
 		     	connection.sendall(enc_message)
