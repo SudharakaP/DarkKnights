@@ -15,6 +15,7 @@ from optparse import OptionParser
 from Crypto.Hash import HMAC
 from Crypto.Cipher import AES
 from Crypto import Random
+from hmac import compare_digest
 
 
 #--------------------------------------------------------------------------------------------------------------------
@@ -150,40 +151,24 @@ class ATM:
         query = dict(zip(['account', 'new', 'deposit', 'withdraw', 'get', 'new'], 
                         [options.account, options.new, options.deposit, options.withdraw, options.get, options.new]
                         ))
-        print query
+        #print query
         return json.dumps(query)
 
-    def prepare_query(self, p_msg=None):
+    def communicate_with_bank(self, p_msg):
 
-        """Suggestion on how to prepare plain message query to send to bank. Taken from:
-        #  Source:    client.py
-        #  Author:    Keith R. Gover"""
-
-        try:
+        """Send validated, encrypted and authenticated query to bank.
+        Based on kgover's client.py code but adds call to receive response.
+        Expects the encrypted and authenticated response to be a JSON-encoded string."""
+	try:
             fi = open(self.auth_file, 'r')
             k_tmp = binascii.unhexlify(fi.read())
             fi.close()
         except IOError:
+
             sys.stderr.write('Cannot find file: %s' % self.auth_file) #stderr rather than stdout as per specs
             sys.exit(255)
 
-        # ----------------------------------------------------------------------------
-        #  We are using "encrypt then authenticate" since this provides CCA security.
-        #  This code does the following:
-        #
-        #      * Break the contents of the bank.auth file into 2 128-bit keys.
-        #
-        #      * Do the encryption of the message using an AES block cipher in cipher
-        #        feedback mode (CFB).  The message includes a 26-byte datetime stamp
-        #        that the bank can use as a packet ID to prevent replay attacks.
-        #
-        #      * Takes the encrypted message and runs it through an HMAC hash function
-        #        so we can be certain it has not been altered in transit.
-        #
-        #      * Create packet for transmission in hexadecimal form.  The hash tag is
-        #        already in hex but the ciphertext needs to be converted.
-        # ----------------------------------------------------------------------------
-        key_enc = k_tmp[0:AES.block_size]
+	key_enc = k_tmp[0:AES.block_size]
         key_mac = k_tmp[AES.block_size:]
 
         iv = Random.new().read(AES.block_size)
@@ -195,25 +180,13 @@ class ATM:
 
         pkt = hash.digest() + c_msg
 
-	channel = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	channel.connect(('localhost', 3000))
-	channel.send(pkt)
-
-	exit(0)
-
-    def communicate_with_bank(self, packet=None):
-
-        """Send validated, encrypted and authenticated query to bank.
-        Based on kgover's client.py code but adds call to receive response.
-        Expects the encrypted and authenticated response to be a JSON-encoded string."""
-
         # Create a socket (SOCK_STREAM means a TCP socket)
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         try:
             # Connect to server and send data
             sock.connect((self.bank_ip_address, self.bank_port))
-            sock.send(packet + "\n")#or sendall?
+            sock.sendall(pkt) #or sendall?
 
             # Receive data from the server and shut down
             pkt = sock.recv(1024)
@@ -235,8 +208,8 @@ class ATM:
         #----------------------------------------------------------------------------
 
         if (len(pkt) > 0) and (len(pkt) < 1024):
-            h_tag = pkt[0:32]
-            c_tmp = binascii.unhexlify(pkt[32:])
+            h_tag = pkt[0:16]
+            c_tmp = pkt[16:]
             iv = c_tmp[0:AES.block_size]
 
             c_msg = c_tmp[AES.block_size:]
@@ -245,17 +218,15 @@ class ATM:
             hash.update(c_tmp)
             cipher = AES.new(key_enc, AES.MODE_CFB, iv)
 
-            if (h_tag == hash.hexdigest()):
+            if compare_digest(h_tag, hash.digest()):
                 #TODO: catch potential error
                 p_tmp = cipher.decrypt(c_msg)
-                #There should not be any need for packet ID on the way back.
-                #pkt_id = p_tmp[-26:]
-                #p_msg = p_tmp[:-26]
-                #return p_msg
                 return p_tmp
             else:
                 sys.stderr.write('protocol_error\n')
                 sys.exit(255)
+
+
 
 def main():
 
@@ -330,7 +301,7 @@ def main():
         parser.error('Card already exists: %s' % options.card)
 
     #------------------
-    #Ccre functionality
+    #Core functionality
     #------------------
 
     #Create ATM instance that may communicate with the bank upon potential successful card/account validation
@@ -345,26 +316,20 @@ def main():
 
     #Prepare for communication
     query = atm.sanitize_query(options=options)
-    packet = atm.prepare_query(p_msg=query)
 
     #Communicate with server and post-process decrypted JSON response
     try:
-        raw_response = atm.communicate_with_bank(packet=packet)
+        raw_response = atm.communicate_with_bank(query)
     except socket.error:
         sys.stderr.write('Could not communicate with server.')
         sys.exit(255)
-    try:
-        response = json.loads(raw_response)
-    except TypeError:
-        sys.stderr.write('Could not decode server response.')
+
+    if raw_response == 255:
         sys.exit(255)
-    #255 means failure, anything else should be printed to stdout
-    if response == 255:
-        sys.exit(255)
-    print response
+    print raw_response
 
     #Create new card for new account successfully created
-    if response != 255 and options.new:
+    if raw_response != 255 and options.new:
         created_card = atm.create_card(account=options.account, card=options.card)
         if not created_card:
             parser.error('Could not create card.')
