@@ -13,7 +13,7 @@ from Crypto.Hash import HMAC
 from Crypto.Cipher import AES
 from Crypto import Random
 from hmac import compare_digest
-from helper import print_flush
+from helper import *
 import binascii, socket
 
 ###############################################################################################################
@@ -94,6 +94,19 @@ def main():
 	parser.add_option('-s', action = 'store', dest = 'AUTH_FILE', default = 'bank.auth')
 
 	(options, args) = parser.parse_args()
+
+    	######################
+    	# Input Validation
+    	######################
+    
+    	#Check that length of string arguments is not over 4096 characters
+    	for option in [options.AUTH_FILE] + args:
+        	if isinstance(option, str) and len(option) > 4096:
+            		parser.error('Argument too long for one of the options.')
+
+    	# Check that port number format is valid (beyond default validation provided by optparse)
+    	if not 1024 <= int(options.PORT) <= 65535:
+        	parser.error('Invalid port number: %d' % options.PORT)
 	
 	###############################################################################
 	# Check whether authentication file exist, if not create it. 
