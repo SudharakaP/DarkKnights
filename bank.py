@@ -118,7 +118,7 @@ def atm_request(atm_request):
 		return summary
 
 	# Withdraw specified amount if account already exist.
-	elif (request['withdraw'] is not None) and (account_name in customers) and (float(request['withdraw']) <= customers[account_name]):
+	elif (request['withdraw'] is not None) and (account_name in customers) and (float(request['withdraw']) <= float(customers[account_name])):
 		customers[account_name] -= float(request['withdraw'])
 		summary = json.dumps({"account":account_name, "withdraw": float(request['withdraw'])})
 		return summary
