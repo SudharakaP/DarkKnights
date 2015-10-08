@@ -195,9 +195,9 @@ def main():
 			fo.write(binascii.hexlify(key_enc))
 			fo.write(binascii.hexlify(key_mac))
 			fo.close()
-			print "created"
+			print_flush("created")
 		except IOError:
-			print ('Cannot find file: bank.auth')
+			sys.stderr.write('Cannot find file: bank.auth')
 			exit(255)
 
 	###############################################################################
