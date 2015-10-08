@@ -103,12 +103,12 @@ def atm_request(atm_request):
 	# Creation of new account if the given account does not exist(balance > 10 already taken care of in atm file).
 	if (request['new'] is not None) and (account_name not in customers):
 		customers[account_name] = float(request['new'])
-		summary = json.dumps({"account":account_name, "initial-balance": int(customers[account_name])})
+		summary = json.dumps({"account":account_name, "initial-balance": float(customers[account_name])})
 		return summary
 
 	# Read balance if account already exist.
 	elif (request['get'] is not None) and (account_name in customers):
-		summary = json.dumps({"account":account_name, "balance": customers[account_name]})
+		summary = json.dumps({"account":account_name, "balance": float(customers[account_name])})
 		return summary
 
 	# Deposit specified amount if account already exist.
