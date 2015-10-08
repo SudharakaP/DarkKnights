@@ -102,25 +102,25 @@ def atm_request(atm_request):
 
 	# Creation of new account if the given account does not exist(balance > 10 already taken care of in atm file).
 	if (request['new'] is not None) and (account_name not in customers):
-		customers[account_name] = float(request['new'])
-		summary = json.dumps({"account":account_name, "initial-balance": float(customers[account_name])})
+		customers[account_name] = "%.2f" % float(request['new'])
+		summary = json.dumps({"account":account_name, "initial-balance": "%.2f" % float(customers[account_name])})
 		return summary
 
 	# Read balance if account already exist.
 	elif (request['get'] is not None) and (account_name in customers):
-		summary = json.dumps({"account":account_name, "balance": float(customers[account_name])})
+		summary = json.dumps({"account":account_name, "balance": "%.2f" % float(customers[account_name])})
 		return summary
 
 	# Deposit specified amount if account already exist.
 	elif (request['deposit'] is not None) and (account_name in customers):
-		customers[account_name] += float(request['deposit'])
-		summary = json.dumps({"account":account_name, "deposit": float(request['deposit'])})
+		customers[account_name] += "%.2f" % float(request['deposit'])
+		summary = json.dumps({"account":account_name, "deposit": "%.2f" % float(request['deposit'])})
 		return summary
 
 	# Withdraw specified amount if account already exist.
-	elif (request['withdraw'] is not None) and (account_name in customers) and (float(request['withdraw']) <= float(customers[account_name])):
-		customers[account_name] -= float(request['withdraw'])
-		summary = json.dumps({"account":account_name, "withdraw": float(request['withdraw'])})
+	elif (request['withdraw'] is not None) and (account_name in customers) and ("%.2f" % float(request['withdraw']) <= "%.2f" % float(customers[account_name])):
+		customers[account_name] -= "%.2f" % float(request['withdraw'])
+		summary = json.dumps({"account":account_name, "withdraw": "%.2f" % float(request['withdraw'])})
 		return summary
 	else:
 		return "255"
