@@ -44,13 +44,13 @@ def atm_request(atm_request):
 	# Deposit specified amount if account already exist.
 	elif (request['deposit'] is not None) and (account_name in customers):
 		customers[account_name] += float(request['deposit'])
-		summary = json.dumps({"account":account_name, "deposit": customers[account_name]})
+		summary = json.dumps({"account":account_name, "deposit": float(request['deposit'])})
 		return summary
 
 	# Withdraw specified amount if account already exist.
-	elif (request['withdraw'] is not None) and (account_name in customers) and (request['withdraw'] <= customers[account_name]):
-		customers[account_name] -= float(request['deposit'])
-		summary = json.dumps({"account":account_name, "deposit": customers[account_name]})
+	elif (request['withdraw'] is not None) and (account_name in customers) and (float(request['withdraw']) <= customers[account_name]):
+		customers[account_name] -= float(request['withdraw'])
+		summary = json.dumps({"account":account_name, "withdraw": float(request['withdraw'])})
 		return summary
 	else:
 		return "255"
