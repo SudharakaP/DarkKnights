@@ -53,7 +53,7 @@ def atm_request(atm_request):
 		summary = json.dumps({"account":account_name, "deposit": customers[account_name]})
 		return summary
 	else:
-		return 255
+		return "255"
 
 # Creates the encrypted message that is to be sent to the atm. Borrowed heavily from Keith's client.py
 
@@ -194,8 +194,9 @@ def main():
 		    p_msg = p_tmp[:-26]
 		    if pkt_id not in id_list:
 			id_list.append(pkt_id)
-		        message = atm_request(p_msg)
-			print message
+			message = atm_request(p_msg)
+			if message != '255':
+				print message
 			
 			# Encrypts and sends the message to atm.
 			enc_message = message_to_atm(message, options.AUTH_FILE)
