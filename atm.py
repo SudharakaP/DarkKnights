@@ -193,9 +193,13 @@ class ATM:
         hash = HMAC.new(key_mac)
         hash.update(c_msg)
 
-        pkt = hash.hexdigest() + binascii.hexlify(c_msg)
+        pkt = hash.digest() + c_msg
 
-        return pkt
+	channel = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	channel.connect(('localhost', 3000))
+	channel.send(pkt)
+
+	exit(0)
 
     def communicate_with_bank(self, packet=None):
 
