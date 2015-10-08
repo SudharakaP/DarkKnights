@@ -11,6 +11,8 @@ import json
 from Crypto.Hash import HMAC
 from Crypto.Cipher import AES
 from Crypto import Random
+from hmac import compare_digest
+from helper import print_flush
 import binascii, socket
 
 # Custom error code 255 for any invalid command-line options.
@@ -93,30 +95,33 @@ def main():
 
 	while True:
 	    connection, address = channel.accept()
-	    pkt = connection.recv(256)
-	    if (len(pkt) > 0) and (len(pkt) < 256):
-		h_tag = pkt[0:32]
-		c_tmp = binascii.unhexlify(pkt[32:])
+	    pkt = connection.recv(1024)
+	    if (len(pkt) > 0) and (len(pkt) < 1024):
+		h_tag = pkt[0:16]
+		c_tmp = pkt[16:]
 		
-		iv = c_tmp[0:AES.block_size]
+		iv = c_tmp[:AES.block_size]
 		c_msg = c_tmp[AES.block_size:]
 
 		hash = HMAC.new(key_mac)
 		hash.update(c_tmp)
 		cipher = AES.new(key_enc, AES.MODE_CFB, iv)
 		
-		if (h_tag == hash.hexdigest()):
+		if compare_digest(h_tag, hash.digest()):
 		    p_tmp = cipher.decrypt(c_msg)
 		    pkt_id = p_tmp[-26:]
 		    p_msg = p_tmp[:-26]
 		    if pkt_id not in id_list:
 		        atm_request(p_msg)
 		        id_list.append(pkt_id)
-		        print p_msg
+		        print_flush(p_msg)
 		    else:
-		        print('protocol_error\n')
+		        print_flush('protocol_error')
 		else:
-		    print('protocol_error\n')
+		    print_flush('protocol_error')
+            else:
+	        print_flush('protocol_error')
+        exit(0)
 	
 if __name__ == "__main__":
 	main()
