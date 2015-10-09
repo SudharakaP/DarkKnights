@@ -31,8 +31,8 @@ def is_valid_amount_format(amount, max_amount=4294967295.99):
     Command line input amounts are bounded from 0.00 to 4294967295.99 inclusively
     but an account may accrue any non-negative balance over multiple transactions."""
 
-    pattern = re.compile(r'^(0|[1-9][0-9]*)(\.[0-9]{2})?$')
-    if not re.match(pattern, amount) or float(amount) > max_amount:
+    pattern = re.compile(r'^(0|[1-9][0-9]*)\.\d{2}$')
+    if not pattern.match(amount) or float(amount) > max_amount:
         return False
     return True
 
