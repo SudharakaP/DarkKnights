@@ -342,12 +342,11 @@ def main():
         sys.stderr.write('Could not communicate with server.')
         sys.exit(255)
 
-    if raw_response == 255:
+    if raw_response == '255':
         sys.exit(255)
-    print raw_response
 
     #Create new card for new account successfully created
-    if raw_response != 255 and options.new:
+    if raw_response != '255' and options.new:
         created_card = atm.create_card(account=options.account, card=options.card)
         if not created_card:
             parser.error('Could not create card.')
