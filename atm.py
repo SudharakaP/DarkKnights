@@ -224,8 +224,6 @@ class ATM:
                 sys.stderr.write('protocol_error\n')
                 sys.exit(255)
 
-
-
 def main():
 
     parser = ATMOptionParser()
@@ -244,6 +242,16 @@ def main():
     #-----------------------
     # Basic input validation
     #-----------------------
+
+    # Checking for any repeated cmd-line options
+    if len(sys.argv) != len(set(sys.argv)):
+	parser.error('Repeated cmd-lin arguments')
+	exit(255)
+
+    # Cheking to see if there's any additional arguments
+    if len(args) > 0:
+	parser.error('Additional argument error')
+	exit(255)
 
     #Check that length of string arguments is not over 4096 characters
     for option in [options.account, options.new, options.deposit, options.withdraw, options.ip_address, options.auth, options.card] + args:
@@ -344,7 +352,6 @@ def main():
         if not created_card:
             parser.error('Could not create card.')
 	    exit(255)
-
 
 if __name__ == "__main__":
     main()
