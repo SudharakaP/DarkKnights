@@ -103,24 +103,24 @@ def atm_request(atm_request):
 	# Creation of new account if the given account does not exist(balance > 10 already taken care of in atm file).
 	if (request['new'] is not None) and (account_name not in customers):
 		customers[account_name] = float(request['new'])
-		summary = json.dumps({"initial_balance": round(float(customers[account_name]),2), "account": account_name})
+		summary = json.dumps({"initial_balance": customers[account_name], "account": account_name})
 		return summary
 
 	# Read balance if account already exist.
 	elif (request['get'] is not None) and (account_name in customers):
-		summary = json.dumps({"account":account_name, "balance": round(customers[account_name],2)})
+		summary = json.dumps({"account": account_name, "balance": customers[account_name]})
 		return summary
 
 	# Deposit specified amount if account already exist.
 	elif (request['deposit'] is not None) and (account_name in customers):
-		customers[account_name] += float(request['deposit'])
-		summary = json.dumps({"account":account_name, "deposit": round(float(request['deposit']),2)})
+		customers[account_name] = round(customers[account_name] + float(request['deposit']),2)
+		summary = json.dumps({"account":account_name, "deposit": float(request['deposit'])})
 		return summary
 
 	# Withdraw specified amount if account already exist.
-	elif (request['withdraw'] is not None) and (account_name in customers) and (float(request['withdraw']) <= float(customers[account_name])):
-		customers[account_name] -= float(request['withdraw'])
-		summary = json.dumps({"account":account_name, "withdraw": round(float(request['withdraw']),2)})
+	elif (request['withdraw'] is not None) and (account_name in customers) and (float(request['withdraw']) <= customers[account_name]):
+		customers[account_name] = round(customers[account_name] - float(request['withdraw']),2)
+		summary = json.dumps({"account":account_name, "withdraw": float(request['withdraw'])})
 		return summary
 	else:
 		return "255"
@@ -133,7 +133,7 @@ def message_to_atm(p_msg, auth_file):
             k_tmp = binascii.unhexlify(fi.read())
             fi.close()
         except IOError:
-            sys.stderr.write('Cannot find file: %s' % self.auth_file) 
+            sys.stderr.write('Cannot find file: %s' % auth_file) 
             sys.exit(255)
 
 	key_enc = k_tmp[0:AES.block_size]
