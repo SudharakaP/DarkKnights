@@ -75,6 +75,15 @@ def is_valid_ip_address(ip_address):
         return False
     return True
 
+# ----------------------------------------------------------------------------
+#  This function appends a carriage return to the end of the input string,
+#  prints the string plus carriage return and then flushes the I/O buffer.
+#  This is a project requirement.
+# ----------------------------------------------------------------------------
+def print_flush (S_in) :
+    print S_in #+ '\n'
+    sys.stdout.flush()
+
 #---------------------
 #Parse ATM CLI options
 #---------------------
@@ -351,6 +360,9 @@ def main():
         if not created_card:
             parser.error('Could not create card.')
 	    exit(255)
+
+    # Successful transaction, print transaction result returned from bank
+    print_flush(raw_response)
 
 if __name__ == "__main__":
     main()
