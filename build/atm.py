@@ -83,7 +83,7 @@ def is_valid_ip_address(ip_address):
 #  This is a project requirement.
 # ----------------------------------------------------------------------------
 def print_flush (S_in) :
-    print S_in #+ '\n'
+    print S_in
     sys.stdout.flush()
 
 # ----------------------------------------------------------------------------
@@ -184,7 +184,13 @@ class ATM:
         key_mac = k_tmp[AES.block_size:]
 
         iv = Random.new().read(AES.block_size)
-        cipher = AES.new(key_enc, AES.MODE_CFB, iv)
+
+        try:
+            cipher = AES.new(key_enc, AES.MODE_CFB, iv)
+        except ValueError:
+            sys.stderr.write('Wrong AES parameters')
+            exit(63)
+
         c_msg = iv + cipher.encrypt(p_msg + str(datetime.datetime.now())) 
 
         hash = HMAC.new(key_mac)
@@ -193,17 +199,29 @@ class ATM:
         pkt = hash.digest() + c_msg
 
         # Create a socket (SOCK_STREAM means a TCP socket)
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:    
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        except socket.error:
+            sys.stderr.write('Socket error')
+            exit(63)
 
+        # Connect to server and send data           
+        sock.connect((self.bank_ip_address, self.bank_port))
+
+        sent = sock.sendall(pkt)
+
+        if sent is not None:
+            sys.stderr.write("Sending packets failed")
+            exit(63)
+        
+        # Receive data from the server and shut down#
         try:
-            # Connect to server and send data
-            sock.connect((self.bank_ip_address, self.bank_port))
-            sock.sendall(pkt) #or sendall?
-
-            # Receive data from the server and shut down
+            sock.settimeout(10)
             pkt = sock.recv(1024)
-        finally:
-            sock.close()
+            sock.settimeout(None)
+        except socket.error:
+            sys.stderr.write("No packets recieved")
+            exit(63)
 
         # --------------------------------------------------------------------
         #  * Extract the hash tag from the incoming packet.
@@ -229,15 +247,20 @@ class ATM:
 
             hash = HMAC.new(key_mac)
             hash.update(c_tmp)
-            cipher = AES.new(key_enc, AES.MODE_CFB, iv)
+
+            try:
+                cipher = AES.new(key_enc, AES.MODE_CFB, iv)
+            except ValueError:
+                sys.stderr.write('Wrong AES parameters')
+                exit(63)
 
             if compare_digest(h_tag, hash.digest()):
                 #TODO: catch potential error
                 p_tmp = cipher.decrypt(c_msg)
                 return p_tmp
             else:
-                sys.stderr.write('protocol_error\n')
-                sys.exit(255)
+                sys.stderr.write('Digest comparison fail')
+                sys.exit(63)
 
 def main():
 
@@ -350,17 +373,13 @@ def main():
     # Prepare for communication
     query = atm.sanitize_query(options=options)
 
-    # Communicate with server and post-process decrypted JSON response
-    try:
-        raw_response = atm.communicate_with_bank(query)
-    except socket.error:
-        sys.stderr.write('Could not communicate with server.')
-        sys.exit(255)
-
+    #Communicate with server and post-process decrypted JSON response
+    raw_response = atm.communicate_with_bank(query)
+    
     if raw_response == '255':
         sys.exit(255)
 
-    # Create new card for new account successfully created
+    #Create new card for new account
     if raw_response != '255' and options.new:
         created_card = atm.create_card(account=options.account, card=options.card)
         if not created_card:
@@ -369,6 +388,7 @@ def main():
 
     # Successful transaction, print transaction result returned from bank
     print_flush(raw_response)
+    exit(0)
 
 if __name__ == "__main__":
     main()
