@@ -14,6 +14,7 @@ from Crypto.Cipher import AES
 from Crypto import Random
 from hmac import compare_digest
 import binascii, socket
+import signal
 
 # ----------------------------------------------------------------------------
 #  This function appends a carriage return to the end of the input string,
@@ -29,6 +30,11 @@ def custom_round(flt):
     if abs(int(flt)-flt) < 0.001:
         return int(flt)
     return flt
+
+# Check for SIGTERM signal on unix and terminate the program.
+def handler(signum, frame):
+    sys.stderr.write("SIGTERM exit")
+    sys.exit(0)
 
 # ----------------------------------------------------------------------------
 #  This method takes a reqeust sent by the ATM in JSON and checks whether it
@@ -119,7 +125,10 @@ class BankParser(OptionParser):
         sys.exit(255)
 
 def main():
-
+	# Handles the SIGTERM call on unix.    
+    signal.signal(signal.SIGTERM, handler)
+    signal.signal(signal.SIGINT, handler)
+	
     parser = BankParser()
     parser.add_option('-p', action = 'store', dest = 'PORT', type = 'int', default = 3000)
     parser.add_option('-s', action = 'store', dest = 'AUTH_FILE', default = 'bank.auth')
@@ -204,6 +213,7 @@ def main():
     id_list = []
 
     channel = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    channel.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     channel.bind(('localhost', options.PORT))
     channel.listen(1)
 
