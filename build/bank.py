@@ -21,9 +21,15 @@ import re
 #  prints the string plus carriage return and then flushes the I/O buffer.
 #  This is a project requirement.
 # ----------------------------------------------------------------------------
-def print_flush (S_in) :
-    print S_in #+ '\n'
+def print_flush(S_in) :
+    print S_in
     sys.stdout.flush()
+
+# Check if float is equal to an int.
+def custom_round(flt):
+    if abs(int(flt)-flt) < 0.001:
+        return int(flt)
+    return flt
 
 # ----------------------------------------------------------------------------
 #  This method takes a reqeust sent by the ATM in JSON and checks whether it
@@ -37,7 +43,6 @@ customers = {}
 def atm_request(atm_request):
 
     request = json.loads(atm_request)
-
     account_name = request['account']
 
     # ------------------------------------------------------------------------
@@ -45,7 +50,7 @@ def atm_request(atm_request):
     #  (balance > 10 already taken care of in atm file).
     # ------------------------------------------------------------------------
     if (request['new'] is not None) and (account_name not in customers):
-        customers[account_name] = float(request['new'])
+        customers[account_name] = custom_round(float(request['new']))
         summary = json.dumps({"initial_balance": customers[account_name], "account": account_name})
         return summary
 
@@ -60,16 +65,16 @@ def atm_request(atm_request):
     #  Deposit specified amount if account already exist.
     # ------------------------------------------------------------------------
     elif (request['deposit'] is not None) and (account_name in customers):
-        customers[account_name] = round(customers[account_name] + float(request['deposit']),2)
-        summary = json.dumps({"account":account_name, "deposit": float(request['deposit'])})
+        customers[account_name] = custom_round(round(customers[account_name] + float(request['deposit']),2))
+        summary = json.dumps({"account":account_name, "deposit": custom_round(float(request['deposit']))})
         return summary
 
     # ------------------------------------------------------------------------
     #  Withdraw specified amount if account already exist.
     # ------------------------------------------------------------------------
     elif (request['withdraw'] is not None) and (account_name in customers) and (float(request['withdraw']) <= customers[account_name]):
-        customers[account_name] = round(customers[account_name] - float(request['withdraw']),2)
-        summary = json.dumps({"account":account_name, "withdraw": float(request['withdraw'])})
+        customers[account_name] = custom_round(round(customers[account_name] - float(request['withdraw']),2))
+        summary = json.dumps({"account":account_name, "withdraw": custom_round(float(request['withdraw']))})
         return summary
 
     # ------------------------------------------------------------------------
@@ -135,12 +140,12 @@ def main():
     if not 1024 <= int(options.PORT) <= 65535:
         parser.error('Invalid port number: %d' % options.PORT)
         exit(255)
-    
+
     # ------------------------------------------------------------------------
     # Check whether authentication file exist, if not create it:
     #     * Generate two 128-bit keys, one for authentication & one for
     #       encryption.
-    #     * The AES block size is always 16-bytes (128-bits). 
+    #     * The AES block size is always 16-bytes (128-bits).
     #     * These are written to the file bank.auth in hexadecimal form.
     # ------------------------------------------------------------------------
     if os.path.isfile(options.AUTH_FILE):
@@ -204,19 +209,32 @@ def main():
     channel.listen(1)
 
     while True:
-        connection, address = channel.accept()
-        pkt = connection.recv(1024)
+        connection, address = channel.accept()    
+        try:
+            connection.settimeout(10)
+            pkt = connection.recv(1024)
+            connection.settimeout(None)
+        except socket.error:
+            print_flush('protocol_error')
+            continue
+
         if (len(pkt) > 0) and (len(pkt) < 1024):
             h_tag = pkt[0:16]
             c_tmp = pkt[16:]
-                
+
             iv = c_tmp[:AES.block_size]
             c_msg = c_tmp[AES.block_size:]
 
             hash = HMAC.new(key_mac)
             hash.update(c_tmp)
-            cipher = AES.new(key_enc, AES.MODE_CFB, iv)
-                
+
+            try:
+                cipher = AES.new(key_enc, AES.MODE_CFB, iv)
+            except ValueError:
+                sys.stderr.write('Wrong AES parameters')
+                print_flush('protocol_error')
+                continue
+
             if compare_digest(h_tag, hash.digest()):
                 p_tmp = cipher.decrypt(c_msg)
                 pkt_id = p_tmp[-26:]
@@ -225,8 +243,8 @@ def main():
                     id_list.append(pkt_id)
                     message = atm_request(p_msg)
                     if message != '255':
-                        print_flush(message)
-
+                        print_flush(str(message))
+                        sys.stderr.write(message)
                     # Encrypts and sends the message to atm.
                     enc_message = message_to_atm(message, options.AUTH_FILE)
                     connection.sendall(enc_message)
@@ -240,3 +258,4 @@ def main():
         
 if __name__ == "__main__":
     main()
+
