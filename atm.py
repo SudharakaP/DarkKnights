@@ -186,46 +186,45 @@ class ATM:
         iv = Random.new().read(AES.block_size)
 
         try:
-            	cipher = AES.new(key_enc, AES.MODE_CFB, iv)
-	except ValueError:
-		sys.stderr.write('Wrong AES parameters')
-		exit(63)
+            cipher = AES.new(key_enc, AES.MODE_CFB, iv)
+        except ValueError:
+            sys.stderr.write('Wrong AES parameters')
+            sys.exit(63)
 
         c_msg = iv + cipher.encrypt(p_msg + str(datetime.datetime.now())) 
-	
+
         hash = HMAC.new(key_mac)
         hash.update(c_msg)
 
         pkt = hash.digest() + c_msg
 
         # Create a socket (SOCK_STREAM means a TCP socket)
-	try:	
-		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	except socket.error:
-		sys.stderr.write('Socket error')
-		exit(63)
-	
-	# Connect to server and send data           
+        try:    
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        except socket.error:
+            sys.stderr.write('Socket error')
+            sys.exit(63)
+
+        # Connect to server and send data           
         sock.connect((self.bank_ip_address, self.bank_port))
 
-	
-	sent = sock.sendall(pkt)
+        sent = sock.sendall(pkt)
 
-	if sent is not None:
-		sys.stderr.write("Sending packets failed")
-		exit(63)
+        if sent is not None:
+            sys.stderr.write("Sending packets failed")
+            sys.exit(63)
         
-	# Receive data from the server and shut down#
-	try:
-		sock.settimeout(10)
-		pkt = sock.recv(1024)
-		sock.settimeout(None)
-	except socket.error:
-		sys.stderr.write("No packets recieved")
-		exit(63)
-        #---------------------------------------------------------------------------
-        #      * Extract the hash tag from the incoming packet.  This needs to remain
-        #        in hexadecimal form.
+        # Receive data from the server and shut down#
+        try:
+            sock.settimeout(10)
+            pkt = sock.recv(1024)
+            sock.settimeout(None)
+        except socket.error:
+            sys.stderr.write("No packets recieved")
+            sys.exit(63)
+
+        # --------------------------------------------------------------------
+        #  * Extract the hash tag from the incoming packet.
         #
         #  * Extract the IV and encrypted message from the incoming packet.
         #
@@ -248,11 +247,12 @@ class ATM:
 
             hash = HMAC.new(key_mac)
             hash.update(c_tmp)
-	    try:
-            	cipher = AES.new(key_enc, AES.MODE_CFB, iv)
-	    except ValueError:
-		sys.stderr.write('Wrong AES parameters')
-		exit(63)
+
+            try:
+                cipher = AES.new(key_enc, AES.MODE_CFB, iv)
+            except ValueError:
+                sys.stderr.write('Wrong AES parameters')
+                sys.exit(63)
 
             if compare_digest(h_tag, hash.digest()):
                 #TODO: catch potential error
@@ -284,77 +284,77 @@ def main():
     # Check for any repeated cmd-line options
     if len(sys.argv) != len(set(sys.argv)):
         parser.error('Repeated cmd-lin arguments')
-        exit(255)
+        sys.exit(255)
 
     # Check to see if there's any additional arguments
     if len(args) > 0:
         parser.error('Additional argument error')
-        exit(255)
+        sys.exit(255)
 
     # Check that length of string arguments is not over 4096 characters
     for option in [options.account, options.new, options.deposit, options.withdraw, options.ip_address, options.auth, options.card] + args:
         if isinstance(option, str) and len(option) > 4096:
             parser.error('Argument too long for one of the options.')
-            exit(255)
+            sys.exit(255)
 
     # Check that required parameter is passed
     if not options.account:
         parser.error('"-a" is required.')
-        exit(255)
+        sys.exit(255)
 
     # Check that valid account name format is provided
     if not is_valid_account_format(options.account):
         parser.error('Invalid account name: %s' % options.account)
-        exit(255)
+        sys.exit(255)
 
     # Check that at one mode of operation is specified
     if (not options.new) and (not options.deposit) and (not options.withdraw) and (not options.get):
         parser.error('One mode of operation must be specified.')
-        exit(255)
+        sys.exit(255)
 
     # Check that two modes of operation are not specified
     if (options.new and options.deposit) or (options.new and options.withdraw) or (options.new and options.get) \
         or (options.deposit and options.withdraw) or (options.deposit and options.get) or (options.withdraw and options.get):
          parser.error('Only one mode of operation must be specified.')
-         exit(255)
+         sys.exit(255)
 
     # Check that IP address format is valid
     if not is_valid_ip_address(options.ip_address):
         parser.error('Invalid IP address: %s' % options.ip_address)
-        exit(255)
+        sys.exit(255)
 
     # Check that port number format is valid (beyond default validation provided by optparse)
     if not 1024 <= int(options.port) <= 65535:
         parser.error('Invalid port number: %d' % options.port)
-        exit(255)
+        sys.exit(255)
 
     # Check that potential balance format is valid
     if options.new:
         if not is_valid_amount_format(options.new) or not float(options.new) >= 10:
             parser.error('Invalid balance amount: %s' % options.new)
-            exit(255)
+            sys.exit(255)
 
     # Check that potential deposit format is valid
     if options.deposit:
         if not is_valid_amount_format(options.deposit) or not float(options.deposit) > 0:
             parser.error('Invalid deposit amount: %s' % options.deposit)
-            exit(255)
+            sys.exit(255)
 
     # Check that potential withdrawal format is valid
     if options.withdraw:
         if not is_valid_amount_format(options.withdraw) or not float(options.withdraw) > 0:
             parser.error('Invalid withdrawal amount: %s' % options.withdraw)
-            exit(255)
+            sys.exit(255)
 
     # Validate the card file format
     if options.card and not is_valid_filename_format(options.card):
         parser.error('Invalid card file format: %s' % options.card)
-        exit(255)
+        sys.exit(255)
 
     # Validate that the specified card file does not already exist for new accounts
     if options.new and options.card and os.path.isfile(options.card):
         parser.error('Card already exists: %s' % options.card)
-        exit(255)
+        sys.exit(255)
 
     # ------------------------------------------------------------------------
     #  Core functionality
@@ -368,7 +368,7 @@ def main():
         valid_account, msg = atm.is_valid_account(account=options.account, card=options.card)
         if not valid_account:
             parser.error(msg)
-            exit(255)
+            sys.exit(255)
 
     # Prepare for communication
     query = atm.sanitize_query(options=options)
@@ -384,11 +384,11 @@ def main():
         created_card = atm.create_card(account=options.account, card=options.card)
         if not created_card:
             parser.error('Could not create card.')
-            exit(255)
+            sys.exit(255)
 
     # Successful transaction, print transaction result returned from bank
     print_flush(raw_response)
-    exit(0)
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()
