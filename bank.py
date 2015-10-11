@@ -31,7 +31,7 @@ def custom_round(flt):
         return int(flt)
     return flt
 
-# Check for SIGTERM signal on unix and terminate the program.
+# Handles the SIGTERM and SIGINT calls.
 def handler(signum, frame):
     sys.stderr.write("SIGTERM exit")
     sys.exit(0)
@@ -125,7 +125,7 @@ class BankParser(OptionParser):
         sys.exit(255)
 
 def main():
-	# Handles the SIGTERM call on unix.    
+    # Handles the SIGTERM and SIGINT calls.    
     signal.signal(signal.SIGTERM, handler)
     signal.signal(signal.SIGINT, handler)
 	
