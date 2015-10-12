@@ -206,12 +206,17 @@ def main():
     #      * All messages are printed using a function that adds a carriage
     #        return to the end of the string and then flushes the I/O buffer.
     #
+    #      * After processing the message is returned to the ATM along with
+    #        the packet ID from the incoming packet.  This will be compared
+    #        in the ATM to the ID it generated and make sure they are the
+    #        same.
+    #
     #      * Successful exit requires exit with code 0
     #
     #  TODO:
-    #      * The code currently only allows one connection.  We will need to
-    #        expand this so multiple ATM's can connect.
-    #      * Need to prevent multiple banks from being opened.
+    #      * The code currently only allows one connection.  Do we need to
+    #        expand this so multiple ATM's can connect?
+    #      * Do we need to prevent multiple banks from being opened?
     #
     # ------------------------------------------------------------------------
 
@@ -262,7 +267,8 @@ def main():
                         print_flush(str(message))
                         if (debug):
                             sys.stderr.write(message)
-                    # Encrypts and sends the message to atm.
+                    # Append packet ID, encrypt and sends the message to atm.
+                    message = message + pkt_id
                     enc_message = message_to_atm(message, options.AUTH_FILE)
                     connection.sendall(enc_message)
                 else:
