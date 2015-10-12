@@ -313,77 +313,63 @@ def main():
     # Check for any repeated cmd-line options
     if len(sys.argv) != len(set(sys.argv)):
         parser.error('Repeated cmd-lin arguments')
-        sys.exit(255)
 
     # Check to see if there's any additional arguments
     if len(args) > 0:
         parser.error('Additional argument error')
-        sys.exit(255)
 
     # Check that length of string arguments is not over 4096 characters
     for option in [options.account, options.new, options.deposit, options.withdraw, options.ip_address, options.auth, options.card] + args:
         if isinstance(option, str) and len(option) > 4096:
             parser.error('Argument too long for one of the options.')
-            sys.exit(255)
 
     # Check that required parameter is passed
     if not options.account:
         parser.error('"-a" is required.')
-        sys.exit(255)
 
     # Check that valid account name format is provided
     if not is_valid_account_format(options.account):
         parser.error('Invalid account name: %s' % options.account)
-        sys.exit(255)
 
     # Check that at one mode of operation is specified
     if (not options.new) and (not options.deposit) and (not options.withdraw) and (not options.get):
         parser.error('One mode of operation must be specified.')
-        sys.exit(255)
 
     # Check that two modes of operation are not specified
     if (options.new and options.deposit) or (options.new and options.withdraw) or (options.new and options.get) \
         or (options.deposit and options.withdraw) or (options.deposit and options.get) or (options.withdraw and options.get):
          parser.error('Only one mode of operation must be specified.')
-         sys.exit(255)
 
     # Check that IP address format is valid
     if not is_valid_ip_address(options.ip_address):
         parser.error('Invalid IP address: %s' % options.ip_address)
-        sys.exit(255)
 
     # Check that port number format is valid
     if not is_valid_port_number(options.port):
         parser.error('Invalid port number: %s' % options.port)
-        sys.exit(255)
 
     # Check that potential balance format is valid
     if options.new:
         if not is_valid_amount_format(options.new) or not float(options.new) >= 10:
             parser.error('Invalid balance amount: %s' % options.new)
-            sys.exit(255)
 
     # Check that potential deposit format is valid
     if options.deposit:
         if not is_valid_amount_format(options.deposit) or not float(options.deposit) > 0:
             parser.error('Invalid deposit amount: %s' % options.deposit)
-            sys.exit(255)
 
     # Check that potential withdrawal format is valid
     if options.withdraw:
         if not is_valid_amount_format(options.withdraw) or not float(options.withdraw) > 0:
             parser.error('Invalid withdrawal amount: %s' % options.withdraw)
-            sys.exit(255)
 
     # Validate the card file format
     if options.card and not is_valid_filename_format(options.card):
         parser.error('Invalid card file format: %s' % options.card)
-        sys.exit(255)
 
     # Validate that the specified card file does not already exist for new accounts
     if options.new and options.card and os.path.isfile(options.card):
         parser.error('Card already exists: %s' % options.card)
-        sys.exit(255)
 
     # ------------------------------------------------------------------------
     #  Core functionality
@@ -397,7 +383,6 @@ def main():
         valid_account, msg = atm.is_valid_account(account=options.account, card=options.card)
         if not valid_account:
             parser.error(msg)
-            sys.exit(255)
 
     # Prepare for communication
     query = atm.sanitize_query(options=options)
@@ -413,7 +398,6 @@ def main():
         created_card = atm.create_card(account=options.account, card=options.card)
         if not created_card:
             parser.error('Could not create card.')
-            sys.exit(255)
 
     # Successful transaction, print transaction result returned from bank
     print_flush(raw_response)
