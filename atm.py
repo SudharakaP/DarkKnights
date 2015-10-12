@@ -1,9 +1,11 @@
 #!/usr/bin/python
 # ----------------------------------------------------------------------------
-#  Script to implement ATM functionality for the Coursera Captsone project:
-#
-#      https://builditbreakit.org/static/doc/fall2015/spec/atm.html
-#
+#  Team:    DarkKnights
+#  Date:    September 24, 2015
+#  Members: Johann Roturier, Keith Gover, Sudharaka Palamakumbura,
+#           Yannis Pappas, Yogesh Dorbala
+#  Script:  Implement ATM functionality for the Coursera Captsone project
+#  URL:     https://builditbreakit.org/static/doc/fall2015/spec/atm.html
 # ----------------------------------------------------------------------------
 import sys
 import os
