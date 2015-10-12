@@ -49,9 +49,16 @@ def handler(signum, frame):
 # Account details (customer name and balance) are stored in this dictionary.
 customers = {}
 
+# Temporary dictionary to roll back in case of protocol error. 
+customers_temp = {}
+
+# Account name.
+account_name = ''
+
 def atm_request(atm_request):
 
     request = json.loads(atm_request)
+    global account_name
     account_name = request['account']
 
     # ------------------------------------------------------------------------
@@ -59,22 +66,22 @@ def atm_request(atm_request):
     #  (balance > 10 already taken care of in atm file).
     # ------------------------------------------------------------------------
     if (request['new'] is not None) and (account_name not in customers):
-        customers[account_name] = custom_round(float(request['new']))
-        summary = json.dumps({"initial_balance": customers[account_name], "account": account_name})
+        customers_temp[account_name] = custom_round(float(request['new']))
+        summary = json.dumps({"initial_balance": customers_temp[account_name], "account": account_name})
         return summary
 
     # ------------------------------------------------------------------------
     #  Read balance if account already exist.
     # ------------------------------------------------------------------------
     elif (request['get'] is not None) and (account_name in customers):
-        summary = json.dumps({"account": account_name, "balance": customers[account_name]})
+        summary = json.dumps({"account": account_name, "balance": customers_temp[account_name]})
         return summary
 
     # ------------------------------------------------------------------------
     #  Deposit specified amount if account already exist.
     # ------------------------------------------------------------------------
     elif (request['deposit'] is not None) and (account_name in customers):
-        customers[account_name] = custom_round(round(customers[account_name] + float(request['deposit']),2))
+        customers_temp[account_name] = custom_round(round(customers[account_name] + float(request['deposit']),2))
         summary = json.dumps({"account":account_name, "deposit": custom_round(float(request['deposit']))})
         return summary
 
@@ -82,7 +89,7 @@ def atm_request(atm_request):
     #  Withdraw specified amount if account already exist.
     # ------------------------------------------------------------------------
     elif (request['withdraw'] is not None) and (account_name in customers) and (float(request['withdraw']) <= customers[account_name]):
-        customers[account_name] = custom_round(round(customers[account_name] - float(request['withdraw']),2))
+        customers_temp[account_name] = custom_round(round(customers[account_name] - float(request['withdraw']),2))
         summary = json.dumps({"account":account_name, "withdraw": custom_round(float(request['withdraw']))})
         return summary
 
@@ -130,6 +137,7 @@ class BankParser(OptionParser):
         sys.exit(255)
 
 def main():
+
     # Handles the SIGTERM and SIGINT calls.    
     signal.signal(signal.SIGTERM, handler)
     signal.signal(signal.SIGINT, handler)
@@ -270,7 +278,14 @@ def main():
                     # Append packet ID, encrypt and sends the message to atm.
                     message = message + pkt_id
                     enc_message = message_to_atm(message, options.AUTH_FILE)
-                    connection.sendall(enc_message)
+
+                    # Update the customer dictionary only if confimation sent to ATM
+                    sent = connection.sendall(enc_message)
+                    if sent is None:
+                        customers[account_name] = customers_temp[account_name]
+                    else:
+                        if (debug):
+                            sys.stderr.write("Data from bank atm not sent.")
                 else:
                     print_flush('protocol_error')
             else:
@@ -281,3 +296,4 @@ def main():
         
 if __name__ == "__main__":
     main()
+
