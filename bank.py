@@ -1,9 +1,11 @@
 #!/usr/bin/python
 # ----------------------------------------------------------------------------
-#  Script to implement bank functionality for the Coursera Captsone project:
-#
-#      https://builditbreakit.org/static/doc/fall2015/spec/atm.html
-#
+#  Team:    DarkKnights
+#  Date:    September 24, 2015
+#  Members: Johann Roturier, Keith Gover, Sudharaka Palamakumbura,
+#           Yannis Pappas, Yogesh Dorbala
+#  Script:  Implement bank functionality for the Coursera Captsone project
+#  URL:     https://builditbreakit.org/static/doc/fall2015/spec/atm.html
 # ----------------------------------------------------------------------------
 import sys
 from optparse import OptionParser
@@ -134,6 +136,8 @@ def message_to_atm(p_msg, auth_file):
 # ----------------------------------------------------------------------------
 class BankParser(OptionParser):
     def error(self, message):
+        if msg and debug:
+            sys.stderr.write(msg)
         sys.exit(255)
 
 def main():
@@ -155,12 +159,10 @@ def main():
     for option in [options.AUTH_FILE] + args:
         if isinstance(option, str) and len(option) > 4096:
             parser.error('Argument too long for one of the options.')
-            sys.exit(255)
 
     # Check that port number format is valid (beyond default validation provided by optparse)
     if not 1024 <= int(options.PORT) <= 65535:
-        parser.error('Invalid port number: %d' % options.PORT)
-        sys.exit(255)
+        parser.error('Invalid port number: %d' % int(options.PORT))
 
     # ------------------------------------------------------------------------
     # Check whether authentication file exist, if not create it:
@@ -296,4 +298,3 @@ def main():
         
 if __name__ == "__main__":
     main()
-
