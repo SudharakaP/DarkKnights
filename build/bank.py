@@ -1,9 +1,11 @@
 #!/usr/bin/python
 # ----------------------------------------------------------------------------
-#  Script to implement bank functionality for the Coursera Captsone project:
-#
-#      https://builditbreakit.org/static/doc/fall2015/spec/atm.html
-#
+#  Team:    DarkKnights
+#  Date:    September 24, 2015
+#  Members: Johann Roturier, Keith Gover, Sudharaka Palamakumbura,
+#           Yannis Pappas, Yogesh Dorbala
+#  Script:  Implement bank functionality for the Coursera Captsone project
+#  URL:     https://builditbreakit.org/static/doc/fall2015/spec/atm.html
 # ----------------------------------------------------------------------------
 import sys
 from optparse import OptionParser
@@ -15,9 +17,6 @@ from Crypto import Random
 from hmac import compare_digest
 import binascii, socket
 import signal
-
-# Global variable for enabling debug messages
-debug = False
 
 # ----------------------------------------------------------------------------
 #  This function appends a carriage return to the end of the input string,
@@ -36,8 +35,6 @@ def custom_round(flt):
 
 # Handles the SIGTERM and SIGINT calls.
 def handler(signum, frame):
-    if (debug):
-        sys.stderr.write("SIGTERM exit")
     sys.exit(0)
 
 # ----------------------------------------------------------------------------
@@ -49,9 +46,16 @@ def handler(signum, frame):
 # Account details (customer name and balance) are stored in this dictionary.
 customers = {}
 
+# Temporary dictionary to roll back in case of protocol error. 
+customers_temp = {}
+
+# Account name.
+account_name = ''
+
 def atm_request(atm_request):
 
     request = json.loads(atm_request)
+    global account_name
     account_name = request['account']
 
     # ------------------------------------------------------------------------
@@ -59,22 +63,22 @@ def atm_request(atm_request):
     #  (balance > 10 already taken care of in atm file).
     # ------------------------------------------------------------------------
     if (request['new'] is not None) and (account_name not in customers):
-        customers[account_name] = custom_round(float(request['new']))
-        summary = json.dumps({"initial_balance": customers[account_name], "account": account_name})
+        customers_temp[account_name] = custom_round(float(request['new']))
+        summary = json.dumps({"initial_balance": customers_temp[account_name], "account": account_name})
         return summary
 
     # ------------------------------------------------------------------------
     #  Read balance if account already exist.
     # ------------------------------------------------------------------------
     elif (request['get'] is not None) and (account_name in customers):
-        summary = json.dumps({"account": account_name, "balance": customers[account_name]})
+        summary = json.dumps({"account": account_name, "balance": customers_temp[account_name]})
         return summary
 
     # ------------------------------------------------------------------------
     #  Deposit specified amount if account already exist.
     # ------------------------------------------------------------------------
     elif (request['deposit'] is not None) and (account_name in customers):
-        customers[account_name] = custom_round(round(customers[account_name] + float(request['deposit']),2))
+        customers_temp[account_name] = custom_round(round(customers[account_name] + float(request['deposit']),2))
         summary = json.dumps({"account":account_name, "deposit": custom_round(float(request['deposit']))})
         return summary
 
@@ -82,7 +86,7 @@ def atm_request(atm_request):
     #  Withdraw specified amount if account already exist.
     # ------------------------------------------------------------------------
     elif (request['withdraw'] is not None) and (account_name in customers) and (float(request['withdraw']) <= customers[account_name]):
-        customers[account_name] = custom_round(round(customers[account_name] - float(request['withdraw']),2))
+        customers_temp[account_name] = custom_round(round(customers[account_name] - float(request['withdraw']),2))
         summary = json.dumps({"account":account_name, "withdraw": custom_round(float(request['withdraw']))})
         return summary
 
@@ -104,8 +108,6 @@ def message_to_atm(p_msg, auth_file):
         k_tmp = binascii.unhexlify(fi.read())
         fi.close()
     except IOError:
-        if (debug):
-            sys.stderr.write('Cannot find file: %s' % auth_file) 
         sys.exit(255)
 
     key_enc = k_tmp[0:AES.block_size]
@@ -126,10 +128,11 @@ def message_to_atm(p_msg, auth_file):
 #  Custom error code 255 for any invalid command-line options.
 # ----------------------------------------------------------------------------
 class BankParser(OptionParser):
-    def error(self, message):
+    def error(self, message=None):
         sys.exit(255)
 
 def main():
+
     # Handles the SIGTERM and SIGINT calls.    
     signal.signal(signal.SIGTERM, handler)
     signal.signal(signal.SIGINT, handler)
@@ -147,12 +150,10 @@ def main():
     for option in [options.AUTH_FILE] + args:
         if isinstance(option, str) and len(option) > 4096:
             parser.error('Argument too long for one of the options.')
-            sys.exit(255)
 
     # Check that port number format is valid (beyond default validation provided by optparse)
     if not 1024 <= int(options.PORT) <= 65535:
-        parser.error('Invalid port number: %d' % options.PORT)
-        sys.exit(255)
+        parser.error('Invalid port number: %d' % int(options.PORT))
 
     # ------------------------------------------------------------------------
     # Check whether authentication file exist, if not create it:
@@ -174,8 +175,6 @@ def main():
             fo.close()
             print_flush("created")
         except IOError:
-            if (debug):
-                sys.stderr.write('Cannot find file: bank.auth')
             sys.exit(255)
 
     # ------------------------------------------------------------------------
@@ -206,12 +205,18 @@ def main():
     #      * All messages are printed using a function that adds a carriage
     #        return to the end of the string and then flushes the I/O buffer.
     #
+    #      * After processing the message is returned to the ATM along with
+    #        the packet ID from the incoming packet.  This will be compared
+    #        in the ATM to the ID it generated and make sure they are the
+    #        same.
+    #
     #      * Successful exit requires exit with code 0
     #
     #  TODO:
     #      * The code currently only allows one connection.  Do we need to
     #        expand this so multiple ATM's can connect?
     #      * Do we need to prevent multiple banks from being opened?
+    #
     # ------------------------------------------------------------------------
 
     # Maintain a list of previous date/time stamps
@@ -245,8 +250,6 @@ def main():
             try:
                 cipher = AES.new(key_enc, AES.MODE_CFB, iv)
             except ValueError:
-                if (debug):
-                    sys.stderr.write('Wrong AES parameters')
                 print_flush('protocol_error')
                 continue
 
@@ -259,11 +262,16 @@ def main():
                     message = atm_request(p_msg)
                     if message != '255':
                         print_flush(str(message))
-                        if (debug):
-                            sys.stderr.write(message)
-                    # Encrypts and sends the message to atm.
+
+                    # Append packet ID, encrypt and sends the message to atm.
+                    message = message + pkt_id
                     enc_message = message_to_atm(message, options.AUTH_FILE)
-                    connection.sendall(enc_message)
+
+                    # Update the customer dictionary only if confimation sent to ATM
+                    sent = connection.sendall(enc_message)
+                    if sent is None:
+                        customers[account_name] = customers_temp[account_name]
+
                 else:
                     print_flush('protocol_error')
             else:
@@ -274,4 +282,3 @@ def main():
         
 if __name__ == "__main__":
     main()
-
