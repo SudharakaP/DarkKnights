@@ -135,7 +135,7 @@ def message_to_atm(p_msg, auth_file):
 #  Custom error code 255 for any invalid command-line options.
 # ----------------------------------------------------------------------------
 class BankParser(OptionParser):
-    def error(self, message):
+    def error(self, message=None):
         if msg and debug:
             sys.stderr.write(msg)
         sys.exit(255)
