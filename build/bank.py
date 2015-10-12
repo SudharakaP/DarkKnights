@@ -18,9 +18,6 @@ from hmac import compare_digest
 import binascii, socket
 import signal
 
-# Global variable for enabling debug messages
-debug = False
-
 # ----------------------------------------------------------------------------
 #  This function appends a carriage return to the end of the input string,
 #  prints the string plus carriage return and then flushes the I/O buffer.
@@ -38,8 +35,6 @@ def custom_round(flt):
 
 # Handles the SIGTERM and SIGINT calls.
 def handler(signum, frame):
-    if (debug):
-        sys.stderr.write("SIGTERM exit")
     sys.exit(0)
 
 # ----------------------------------------------------------------------------
@@ -113,8 +108,6 @@ def message_to_atm(p_msg, auth_file):
         k_tmp = binascii.unhexlify(fi.read())
         fi.close()
     except IOError:
-        if (debug):
-            sys.stderr.write('Cannot find file: %s' % auth_file) 
         sys.exit(255)
 
     key_enc = k_tmp[0:AES.block_size]
@@ -135,9 +128,7 @@ def message_to_atm(p_msg, auth_file):
 #  Custom error code 255 for any invalid command-line options.
 # ----------------------------------------------------------------------------
 class BankParser(OptionParser):
-    def error(self, message):
-        if msg and debug:
-            sys.stderr.write(msg)
+    def error(self, message=None):
         sys.exit(255)
 
 def main():
@@ -184,8 +175,6 @@ def main():
             fo.close()
             print_flush("created")
         except IOError:
-            if (debug):
-                sys.stderr.write('Cannot find file: bank.auth')
             sys.exit(255)
 
     # ------------------------------------------------------------------------
@@ -261,8 +250,6 @@ def main():
             try:
                 cipher = AES.new(key_enc, AES.MODE_CFB, iv)
             except ValueError:
-                if (debug):
-                    sys.stderr.write('Wrong AES parameters')
                 print_flush('protocol_error')
                 continue
 
@@ -275,8 +262,7 @@ def main():
                     message = atm_request(p_msg)
                     if message != '255':
                         print_flush(str(message))
-                        if (debug):
-                            sys.stderr.write(message)
+
                     # Append packet ID, encrypt and sends the message to atm.
                     message = message + pkt_id
                     enc_message = message_to_atm(message, options.AUTH_FILE)
@@ -285,9 +271,7 @@ def main():
                     sent = connection.sendall(enc_message)
                     if sent is None:
                         customers[account_name] = customers_temp[account_name]
-                    else:
-                        if (debug):
-                            sys.stderr.write("Data from bank atm not sent.")
+
                 else:
                     print_flush('protocol_error')
             else:
