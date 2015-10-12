@@ -16,6 +16,9 @@ from hmac import compare_digest
 import binascii, socket
 import signal
 
+# Global variable for enabling debug messages
+debug = False
+
 # ----------------------------------------------------------------------------
 #  This function appends a carriage return to the end of the input string,
 #  prints the string plus carriage return and then flushes the I/O buffer.
@@ -33,7 +36,8 @@ def custom_round(flt):
 
 # Handles the SIGTERM and SIGINT calls.
 def handler(signum, frame):
-    sys.stderr.write("SIGTERM exit")
+    if (debug):
+        sys.stderr.write("SIGTERM exit")
     sys.exit(0)
 
 # ----------------------------------------------------------------------------
@@ -100,7 +104,8 @@ def message_to_atm(p_msg, auth_file):
         k_tmp = binascii.unhexlify(fi.read())
         fi.close()
     except IOError:
-        sys.stderr.write('Cannot find file: %s' % auth_file) 
+        if (debug):
+            sys.stderr.write('Cannot find file: %s' % auth_file) 
         sys.exit(255)
 
     key_enc = k_tmp[0:AES.block_size]
@@ -169,7 +174,8 @@ def main():
             fo.close()
             print_flush("created")
         except IOError:
-            sys.stderr.write('Cannot find file: bank.auth')
+            if (debug):
+                sys.stderr.write('Cannot find file: bank.auth')
             sys.exit(255)
 
     # ------------------------------------------------------------------------
@@ -240,7 +246,8 @@ def main():
             try:
                 cipher = AES.new(key_enc, AES.MODE_CFB, iv)
             except ValueError:
-                sys.stderr.write('Wrong AES parameters')
+                if (debug):
+                    sys.stderr.write('Wrong AES parameters')
                 print_flush('protocol_error')
                 continue
 
@@ -253,7 +260,8 @@ def main():
                     message = atm_request(p_msg)
                     if message != '255':
                         print_flush(str(message))
-                        sys.stderr.write(message)
+                        if (debug):
+                            sys.stderr.write(message)
                     # Encrypts and sends the message to atm.
                     enc_message = message_to_atm(message, options.AUTH_FILE)
                     connection.sendall(enc_message)
