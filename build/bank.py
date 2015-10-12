@@ -14,7 +14,10 @@ from Crypto.Cipher import AES
 from Crypto import Random
 from hmac import compare_digest
 import binascii, socket
-import re
+import signal
+
+# Global variable for enabling debug messages
+debug = False
 
 # ----------------------------------------------------------------------------
 #  This function appends a carriage return to the end of the input string,
@@ -30,6 +33,12 @@ def custom_round(flt):
     if abs(int(flt)-flt) < 0.001:
         return int(flt)
     return flt
+
+# Handles the SIGTERM and SIGINT calls.
+def handler(signum, frame):
+    if (debug):
+        sys.stderr.write("SIGTERM exit")
+    sys.exit(0)
 
 # ----------------------------------------------------------------------------
 #  This method takes a reqeust sent by the ATM in JSON and checks whether it
@@ -95,7 +104,8 @@ def message_to_atm(p_msg, auth_file):
         k_tmp = binascii.unhexlify(fi.read())
         fi.close()
     except IOError:
-        sys.stderr.write('Cannot find file: %s' % auth_file) 
+        if (debug):
+            sys.stderr.write('Cannot find file: %s' % auth_file) 
         sys.exit(255)
 
     key_enc = k_tmp[0:AES.block_size]
@@ -120,7 +130,10 @@ class BankParser(OptionParser):
         sys.exit(255)
 
 def main():
-
+    # Handles the SIGTERM and SIGINT calls.    
+    signal.signal(signal.SIGTERM, handler)
+    signal.signal(signal.SIGINT, handler)
+	
     parser = BankParser()
     parser.add_option('-p', action = 'store', dest = 'PORT', type = 'int', default = 3000)
     parser.add_option('-s', action = 'store', dest = 'AUTH_FILE', default = 'bank.auth')
@@ -134,12 +147,12 @@ def main():
     for option in [options.AUTH_FILE] + args:
         if isinstance(option, str) and len(option) > 4096:
             parser.error('Argument too long for one of the options.')
-            exit(255)
+            sys.exit(255)
 
     # Check that port number format is valid (beyond default validation provided by optparse)
     if not 1024 <= int(options.PORT) <= 65535:
         parser.error('Invalid port number: %d' % options.PORT)
-        exit(255)
+        sys.exit(255)
 
     # ------------------------------------------------------------------------
     # Check whether authentication file exist, if not create it:
@@ -149,7 +162,7 @@ def main():
     #     * These are written to the file bank.auth in hexadecimal form.
     # ------------------------------------------------------------------------
     if os.path.isfile(options.AUTH_FILE):
-        exit(255) 
+        sys.exit(255) 
     else:
         key_enc = Random.new().read(AES.block_size)
         key_mac = Random.new().read(AES.block_size)
@@ -161,8 +174,9 @@ def main():
             fo.close()
             print_flush("created")
         except IOError:
-            sys.stderr.write('Cannot find file: bank.auth')
-            exit(255)
+            if (debug):
+                sys.stderr.write('Cannot find file: bank.auth')
+            sys.exit(255)
 
     # ------------------------------------------------------------------------
     #  This block does the following, note the incoming packet is in binary
@@ -205,6 +219,7 @@ def main():
     id_list = []
 
     channel = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    channel.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     channel.bind(('localhost', options.PORT))
     channel.listen(1)
 
@@ -231,7 +246,8 @@ def main():
             try:
                 cipher = AES.new(key_enc, AES.MODE_CFB, iv)
             except ValueError:
-                sys.stderr.write('Wrong AES parameters')
+                if (debug):
+                    sys.stderr.write('Wrong AES parameters')
                 print_flush('protocol_error')
                 continue
 
@@ -244,7 +260,8 @@ def main():
                     message = atm_request(p_msg)
                     if message != '255':
                         print_flush(str(message))
-                        sys.stderr.write(message)
+                        if (debug):
+                            sys.stderr.write(message)
                     # Encrypts and sends the message to atm.
                     enc_message = message_to_atm(message, options.AUTH_FILE)
                     connection.sendall(enc_message)
@@ -254,7 +271,7 @@ def main():
                 print_flush('protocol_error')    
         else:
             print_flush('protocol_error')
-    exit(0)
+    sys.exit(0)
         
 if __name__ == "__main__":
     main()
