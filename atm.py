@@ -205,7 +205,8 @@ class ATM:
                 sys.stderr.write('Wrong AES parameters')
             sys.exit(63)
 
-        c_msg = iv + cipher.encrypt(p_msg + str(datetime.datetime.now())) 
+        outgoing_pkt_id = str(datetime.datetime.now())
+        c_msg = iv + cipher.encrypt(p_msg + outgoing_pkt_id) 
 
         hash = HMAC.new(key_mac)
         hash.update(c_msg)
@@ -252,7 +253,9 @@ class ATM:
         #
         #  * If the message is authentic, decrypt it. 
         #
-        #    j3r's note: There should not be any need for packet ID.
+        #  * Check the packet ID being returned from the bank and make sure
+        #    it matches the packet ID used for the outgoing packet.  This will
+        #    defend against replay attacks on the ATM.
         #
         # --------------------------------------------------------------------
         if (len(pkt) > 0) and (len(pkt) < 1024):
@@ -269,16 +272,23 @@ class ATM:
                 cipher = AES.new(key_enc, AES.MODE_CFB, iv)
             except ValueError:
                 if (debug):
-                    sys.stderr.write('Wrong AES parameters')
+                    sys.stderr.write('Wrong AES parameters.')
                 sys.exit(63)
 
             if compare_digest(h_tag, hash.digest()):
                 #TODO: catch potential error
                 p_tmp = cipher.decrypt(c_msg)
-                return p_tmp
+                incoming_pkt_id = p_tmp[-26:]
+                p_msg = p_tmp[:-26]
+                if incoming_pkt_id == outgoing_pkt_id:
+                    return p_msg
+                else:
+                    if (debug):
+                        sys.stderr.write('Packet Comparison failed.')
+                    sys.exit(63)
             else:
                 if (debug):
-                    sys.stderr.write('Digest comparison fail')
+                    sys.stderr.write('Digest comparison failed.')
                 sys.exit(63)
 
 def main():
