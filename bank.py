@@ -17,9 +17,7 @@ from Crypto import Random
 from hmac import compare_digest
 import binascii, socket
 import signal
-
-# Global variable for enabling debug messages
-debug = False
+from random import randint
 
 # ----------------------------------------------------------------------------
 #  This function appends a carriage return to the end of the input string,
@@ -38,9 +36,15 @@ def custom_round(flt):
 
 # Handles the SIGTERM and SIGINT calls.
 def handler(signum, frame):
-    if (debug):
-        sys.stderr.write("SIGTERM exit")
     sys.exit(0)
+
+def encrypt_pin(key, pin):
+    obj = AES.new(key, AES.MODE_CBC, 'iv')
+    return obj.encrypt(pin)
+
+def decrypt_pin(key, pin):
+    obj = AES.new(key, AES.MODE_CBC, 'iv')
+    return obj.decrypt(pin)
 
 # ----------------------------------------------------------------------------
 #  This method takes a reqeust sent by the ATM in JSON and checks whether it
@@ -50,6 +54,7 @@ def handler(signum, frame):
 
 # Account details (customer name and balance) are stored in this dictionary.
 customers = {}
+pins = {}
 
 # Temporary dictionary to roll back in case of protocol error. 
 customers_temp = {}
@@ -62,6 +67,13 @@ def atm_request(atm_request):
     request = json.loads(atm_request)
     global account_name
     account_name = request['account']
+    try:
+        pin = request['pin']
+    except KeyError:
+        return "255"
+    if pin is None and not pins.get(account_name):#for account creation
+        #sys.stderr.write("NEW: %s - %s \n" % (pin, pins.get(account_name)))
+        pin = str(randint(0,9999))
 
     # ------------------------------------------------------------------------
     #  Creation of new account if the given account does not exist
@@ -69,28 +81,30 @@ def atm_request(atm_request):
     # ------------------------------------------------------------------------
     if (request['new'] is not None) and (account_name not in customers):
         customers_temp[account_name] = custom_round(float(request['new']))
-        summary = json.dumps({"initial_balance": customers_temp[account_name], "account": account_name})
+        pins[account_name] = str(pin)
+        summary = json.dumps({"initial_balance": customers_temp[account_name], "account": account_name, "pin": pin})
         return summary
 
     # ------------------------------------------------------------------------
-    #  Read balance if account already exist.
+    #  Read balance if account already exists and pin matches
     # ------------------------------------------------------------------------
-    elif (request['get'] is not None) and (account_name in customers):
+    elif (request['get'] is not None) and (account_name in customers) and (pin == pins.get(account_name)):
         summary = json.dumps({"account": account_name, "balance": customers_temp[account_name]})
         return summary
 
     # ------------------------------------------------------------------------
-    #  Deposit specified amount if account already exist.
+    #  Deposit specified amount if account already exists and pin matches
     # ------------------------------------------------------------------------
-    elif (request['deposit'] is not None) and (account_name in customers):
+    elif (request['deposit'] is not None) and (account_name in customers) and (pin == pins.get(account_name)):
         customers_temp[account_name] = custom_round(round(customers[account_name] + float(request['deposit']),2))
         summary = json.dumps({"account":account_name, "deposit": custom_round(float(request['deposit']))})
         return summary
 
     # ------------------------------------------------------------------------
-    #  Withdraw specified amount if account already exist.
+    #  Withdraw specified amount if account already exists and pin matches
     # ------------------------------------------------------------------------
-    elif (request['withdraw'] is not None) and (account_name in customers) and (float(request['withdraw']) <= customers[account_name]):
+    elif (request['withdraw'] is not None) and (account_name in customers) and (float(request['withdraw']) <= customers[account_name]) \
+        and (pin == pins.get(account_name)):
         customers_temp[account_name] = custom_round(round(customers[account_name] - float(request['withdraw']),2))
         summary = json.dumps({"account":account_name, "withdraw": custom_round(float(request['withdraw']))})
         return summary
@@ -113,8 +127,6 @@ def message_to_atm(p_msg, auth_file):
         k_tmp = binascii.unhexlify(fi.read())
         fi.close()
     except IOError:
-        if (debug):
-            sys.stderr.write('Cannot find file: %s' % auth_file) 
         sys.exit(255)
 
     key_enc = k_tmp[0:AES.block_size]
@@ -136,8 +148,6 @@ def message_to_atm(p_msg, auth_file):
 # ----------------------------------------------------------------------------
 class BankParser(OptionParser):
     def error(self, message=None):
-        if msg and debug:
-            sys.stderr.write(msg)
         sys.exit(255)
 
 def main():
@@ -184,8 +194,6 @@ def main():
             fo.close()
             print_flush("created")
         except IOError:
-            if (debug):
-                sys.stderr.write('Cannot find file: bank.auth')
             sys.exit(255)
 
     # ------------------------------------------------------------------------
@@ -261,8 +269,6 @@ def main():
             try:
                 cipher = AES.new(key_enc, AES.MODE_CFB, iv)
             except ValueError:
-                if (debug):
-                    sys.stderr.write('Wrong AES parameters')
                 print_flush('protocol_error')
                 continue
 
@@ -274,9 +280,14 @@ def main():
                     id_list.append(pkt_id)
                     message = atm_request(p_msg)
                     if message != '255':
-                        print_flush(str(message))
-                        if (debug):
-                            sys.stderr.write(message)
+                        temp_message = json.loads(message)
+                        try:
+                            del temp_message['pin']
+                        except KeyError:
+                            pass
+                        temp_message = json.dumps(temp_message)
+                        print_flush(str(temp_message))
+
                     # Append packet ID, encrypt and sends the message to atm.
                     message = message + pkt_id
                     enc_message = message_to_atm(message, options.AUTH_FILE)
@@ -284,10 +295,11 @@ def main():
                     # Update the customer dictionary only if confimation sent to ATM
                     sent = connection.sendall(enc_message)
                     if sent is None:
-                        customers[account_name] = customers_temp[account_name]
-                    else:
-                        if (debug):
-                            sys.stderr.write("Data from bank atm not sent.")
+                        try:
+                            customers[account_name] = customers_temp[account_name]
+                        except KeyError: #customers_temp may not have been populated if account verification failed
+                            pass
+
                 else:
                     print_flush('protocol_error')
             else:

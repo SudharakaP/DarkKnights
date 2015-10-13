@@ -4,7 +4,7 @@
 #  Date:    September 24, 2015
 #  Members: Johann Roturier, Keith Gover, Sudharaka Palamakumbura,
 #           Yannis Pappas, Yogesh Dorbala
-#  Script:  Implement ATM functionality for the Coursera Captsone project
+#  Script:  Implement ATM functionality for the Coursera Captsone project:
 #  URL:     https://builditbreakit.org/static/doc/fall2015/spec/atm.html
 # ----------------------------------------------------------------------------
 import sys
@@ -19,9 +19,6 @@ from Crypto.Cipher import AES
 from Crypto import Random
 from hmac import compare_digest
 import re
-
-# Global variable for enabling debug messages
-debug = False
 
 # ----------------------------------------------------------------------------
 #  Helper functions that validates the input according to the given
@@ -104,10 +101,7 @@ def print_flush (S_in) :
 #  Parse ATM CLI options
 # ----------------------------------------------------------------------------
 class ATMOptionParser(OptionParser):
-
     def error(self, msg=None):
-        if msg and debug:
-            sys.stderr.write(msg)
         sys.exit(255)
 
 # ----------------------------------------------------------------------------
@@ -123,7 +117,7 @@ class ATM:
         self.auth_file = auth_file # TODO: Use this to encrypt and/or generate card file
 
 
-    def create_card(self, account, card):
+    def create_card(self, account, card, pin):
 
         """Create card. Spec: Card files are created when atm is invoked with -n to
         create a new account.  This must happen afer the bank has confirmed that the
@@ -136,15 +130,26 @@ class ATM:
 
         with open(card, 'w') as f:
             try:
-                f.write(account)
+                f.write(str(pin))
             except IOError:
                 return False
             return True
 
+    def get_pin(self, card=None, account=None):
+
+        if not card:#No card specified
+            card = "%s.card" % account
+            if not os.path.isfile(card):#No existing card for account
+                return
+
+        with open(card, 'r') as f:
+            pin = f.read()
+            return pin
+
+
     def is_valid_account(self, account, card):
 
-        """Check that account matches associated card.
-        FIXME: this will have to be hardened using the auth file."""
+        """Check that account matches associated card."""
 
         # ------------------------------------------------------------------------
         #  The default value is the account name prepended to ".card"
@@ -169,13 +174,13 @@ class ATM:
                 return (False, msg)
             return (True, 'OK - but probably not really :-)')
 
-    def sanitize_query(self, options=None):
+    def sanitize_query(self, options=None, pin=None):
 
         """Sanitize query by transforming relevant options from options object into
         JSON-encoded string."""
 
-        query = dict(zip(['account', 'new', 'deposit', 'withdraw', 'get', 'new'], 
-                        [options.account, options.new, options.deposit, options.withdraw, options.get, options.new]
+        query = dict(zip(['account', 'new', 'deposit', 'withdraw', 'get', 'new', 'pin'], 
+                        [options.account, options.new, options.deposit, options.withdraw, options.get, options.new, pin]
                         ))
         #print query
         return json.dumps(query)
@@ -190,9 +195,6 @@ class ATM:
             k_tmp = binascii.unhexlify(fi.read())
             fi.close()
         except IOError:
-            # send to stderr and not stdout as per spec
-            if (debug):
-                sys.stderr.write('Cannot find file: %s' % self.auth_file)
             sys.exit(255)
 
         key_enc = k_tmp[0:AES.block_size]
@@ -203,8 +205,6 @@ class ATM:
         try:
             cipher = AES.new(key_enc, AES.MODE_CFB, iv)
         except ValueError:
-            if (debug):
-                sys.stderr.write('Wrong AES parameters')
             sys.exit(63)
 
         outgoing_pkt_id = str(datetime.datetime.now())
@@ -219,8 +219,6 @@ class ATM:
         try:    
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         except socket.error:
-            if (debug):
-                sys.stderr.write('Socket error')
             sys.exit(63)
 
         # Connect to server and send data           
@@ -229,8 +227,6 @@ class ATM:
         sent = sock.sendall(pkt)
 
         if sent is not None:
-            if (debug):
-                sys.stderr.write("Sending packets failed")
             sys.exit(63)
         
         # Receive data from the server and shut down#
@@ -239,8 +235,6 @@ class ATM:
             pkt = sock.recv(1024)
             sock.settimeout(None)
         except socket.error:
-            if (debug):
-                sys.stderr.write("No packets recieved")
             sys.exit(63)
 
         # --------------------------------------------------------------------
@@ -273,8 +267,6 @@ class ATM:
             try:
                 cipher = AES.new(key_enc, AES.MODE_CFB, iv)
             except ValueError:
-                if (debug):
-                    sys.stderr.write('Wrong AES parameters.')
                 sys.exit(63)
 
             if compare_digest(h_tag, hash.digest()):
@@ -285,12 +277,8 @@ class ATM:
                 if incoming_pkt_id == outgoing_pkt_id:
                     return p_msg
                 else:
-                    if (debug):
-                        sys.stderr.write('Packet Comparison failed.')
                     sys.exit(63)
             else:
-                if (debug):
-                    sys.stderr.write('Digest comparison failed.')
                 sys.exit(63)
 
 def main():
@@ -380,14 +368,20 @@ def main():
     # Create ATM instance that may communicate with the bank upon potential successful card/account validation
     atm = ATM(ip_address=options.ip_address, port=options.port, auth_file=options.auth)
 
-    # Actual account validation against card for withdraw, deposit, get (balance) operations
+    # Get account pin if available for existing accounts associated with valid cards
+    pin = None
     if (options.withdraw) or (options.deposit) or (options.get):
-        valid_account, msg = atm.is_valid_account(account=options.account, card=options.card)
-        if not valid_account:
-            parser.error(msg)
+        if options.card and not os.path.isfile(options.card):
+            parser.error('Invalid card.')
+        pin = atm.get_pin(card=options.card, account=options.account)
+    # Actual account validation against card for withdraw, deposit, get (balance) operations
+    #if (options.withdraw) or (options.deposit) or (options.get):
+    #    valid_account, msg = atm.is_valid_account(account=options.account, card=options.card)
+    #    if not valid_account:
+    #        parser.error(msg)
 
     # Prepare for communication
-    query = atm.sanitize_query(options=options)
+    query = atm.sanitize_query(options=options, pin=pin)
 
     #Communicate with server and post-process decrypted JSON response
     raw_response = atm.communicate_with_bank(query)
@@ -397,7 +391,11 @@ def main():
 
     #Create new card for new account
     if raw_response != '255' and options.new:
-        created_card = atm.create_card(account=options.account, card=options.card)
+        response = json.loads(raw_response)
+        pin = response.get('pin')
+        del response['pin']
+        raw_response = json.dumps(response)
+        created_card = atm.create_card(account=options.account, card=options.card, pin=pin)
         if not created_card:
             parser.error('Could not create card.')
 
