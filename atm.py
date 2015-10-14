@@ -196,33 +196,6 @@ class ATM:
 
 	return cipher.decrypt(pin)
 
-    def is_valid_account(self, account, card):
-
-        """Check that account matches associated card."""
-
-        # ------------------------------------------------------------------------
-        #  The default value is the account name prepended to ".card"
-        #  ("<account>.card").  For example, if the account name was 55555, the
-        #  default card file is "55555.card".
-        # ------------------------------------------------------------------------
-        if card is None:
-            card = "%s.card" % account
-
-        card_info = None
-        msg = None
-        try:
-            card_file = open(card, 'r')
-        except IOError as e:
-            msg = '%s: %s' % (e.strerror, card)
-            return (False, msg)
-        else:
-            card_info = card_file.read()
-            card_file.close()
-            if card_info != account:
-                msg = 'Account does not match card.'
-                return (False, msg)
-            return (True, 'OK - but probably not really :-)')
-
     def sanitize_query(self, options=None, pin=None):
 
         """Sanitize query by transforming relevant options from options object into
@@ -441,11 +414,6 @@ def main():
         if options.card and not os.path.isfile(options.card):
             parser.error('Invalid card.')
         pin = atm.get_pin(card=options.card, account=options.account)
-    # Actual account validation against card for withdraw, deposit, get (balance) operations
-    #if (options.withdraw) or (options.deposit) or (options.get):
-    #    valid_account, msg = atm.is_valid_account(account=options.account, card=options.card)
-    #    if not valid_account:
-    #        parser.error(msg)
 
     # Prepare for communication
     query = atm.sanitize_query(options=options, pin=pin)
