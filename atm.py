@@ -130,24 +130,71 @@ class ATM:
         if card is None:
             card = "%s.card" % account
 
-        with open(card, 'w') as f:
-            try:
-                f.write(str(pin))
-            except IOError:
-                return False
-            return True
+        try:
+            f = open(card, 'w')
+        except IOError:
+            return False
+        
+        try:
+            fi = open(self.auth_file, 'r')
+            k_tmp = binascii.unhexlify(fi.read())
+            fi.close()
+        except IOError:
+            # sys.stderr.write('Cannot find file: %s' % self.auth_file)
+            sys.exit(255)
+
+        auth_enc = k_tmp[0:AES.block_size]
+        iv = Random.new().read(AES.block_size)
+
+        try:
+            cipher = AES.new(auth_enc, AES.MODE_CFB, iv)
+        except ValueError:
+            # sys.stderr.write('Wrong AES parameters')
+            sys.exit(63)
+        
+        enc_pin = iv + cipher.encrypt(str(pin))
+        
+        try:
+            f.write(enc_pin)
+        except IOError:
+            return False
+        return True
 
     def get_pin(self, card=None, account=None):
 
-        if not card:#No card specified
+        if not card: #No card specified
             card = "%s.card" % account
-            if not os.path.isfile(card):#No existing card for account
+            if not os.path.isfile(card): #No existing card for account
                 return
 
-        with open(card, 'r') as f:
-            pin = f.read()
-            return pin
+        try:
+            f = open(card, 'r')
+        except IOError:
+            # sys.stderr("Cannot open card file.")
+            sys.exit(255)
 
+        try:
+            fi = open(self.auth_file, 'r')
+            k_tmp = binascii.unhexlify(fi.read())
+            fi.close()
+        except IOError:
+            # sys.stderr.write('Cannot find file: %s' % self.auth_file)
+            sys.exit(255)
+
+        key_enc = k_tmp[0:AES.block_size]
+
+        enc_pin = f.read()
+        iv = enc_pin[0:AES.block_size]
+	pin = enc_pin[AES.block_size:]
+	f.close()        
+
+        try:
+            cipher = AES.new(key_enc, AES.MODE_CFB, iv)
+        except ValueError:
+            # sys.stderr.write('Wrong AES parameters')
+            sys.exit(63)
+
+	return cipher.decrypt(pin)
 
     def is_valid_account(self, account, card):
 
