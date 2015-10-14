@@ -102,6 +102,8 @@ def print_flush (S_in) :
 # ----------------------------------------------------------------------------
 class ATMOptionParser(OptionParser):
     def error(self, msg=None):
+        # if msg:
+        #     sys.stderr.write(msg)
         sys.exit(255)
 
 # ----------------------------------------------------------------------------
@@ -195,6 +197,7 @@ class ATM:
             k_tmp = binascii.unhexlify(fi.read())
             fi.close()
         except IOError:
+            # sys.stderr.write('Cannot find file: %s' % self.auth_file)
             sys.exit(255)
 
         key_enc = k_tmp[0:AES.block_size]
@@ -205,6 +208,7 @@ class ATM:
         try:
             cipher = AES.new(key_enc, AES.MODE_CFB, iv)
         except ValueError:
+            # sys.stderr.write('Wrong AES parameters')
             sys.exit(63)
 
         outgoing_pkt_id = str(datetime.datetime.now())
@@ -221,12 +225,14 @@ class ATM:
         try:    
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         except socket.error:
+            # sys.stderr.write('Socket error')
             sys.exit(63)
 
         # Connect to server and send data           
         sock.connect((self.bank_ip_address, self.bank_port))
         sent = sock.sendall(pkt)
         if sent is not None:
+            # sys.stderr.write("Sending packets failed")
             sys.exit(63)
         
         # Receive data from the server and shut down#
@@ -235,6 +241,7 @@ class ATM:
             pkt = sock.recv(1024)
             sock.settimeout(None)
         except socket.error:
+            # sys.stderr.write("No packets recieved")
             sys.exit(63)
 
         # --------------------------------------------------------------------
@@ -276,6 +283,7 @@ class ATM:
             try:
                 cipher = AES.new(key_enc, AES.MODE_CFB, iv)
             except ValueError:
+                # sys.stderr.write('Wrong AES parameters.')
                 sys.exit(63)
 
             if compare_digest(h_tag, hash.digest()):
@@ -287,8 +295,10 @@ class ATM:
                 if incoming_pkt_id == outgoing_pkt_id:
                     return p_msg
                 else:
+                    # sys.stderr.write('Packet Comparison failed.')
                     sys.exit(63)
             else:
+                # sys.stderr.write('Digest comparison failed.')
                 sys.exit(63)
 
 def main():
