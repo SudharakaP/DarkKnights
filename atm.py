@@ -130,51 +130,71 @@ class ATM:
         if card is None:
             card = "%s.card" % account
 
-        with open(card, 'w') as f:
-            try:
-                f.write(str(pin))
-            except IOError:
-                return False
-            return True
+        try:
+            f = open(card, 'w')
+        except IOError:
+            return False
+        
+        try:
+            fi = open(self.auth_file, 'r')
+            k_tmp = binascii.unhexlify(fi.read())
+            fi.close()
+        except IOError:
+            # sys.stderr.write('Cannot find file: %s' % self.auth_file)
+            sys.exit(255)
+
+        auth_enc = k_tmp[0:AES.block_size]
+        iv = Random.new().read(AES.block_size)
+
+        try:
+            cipher = AES.new(auth_enc, AES.MODE_CFB, iv)
+        except ValueError:
+            # sys.stderr.write('Wrong AES parameters')
+            sys.exit(63)
+        
+        enc_pin = iv + cipher.encrypt(str(pin))
+        
+        try:
+            f.write(enc_pin)
+        except IOError:
+            return False
+        return True
 
     def get_pin(self, card=None, account=None):
 
-        if not card:#No card specified
+        if not card: #No card specified
             card = "%s.card" % account
-            if not os.path.isfile(card):#No existing card for account
+            if not os.path.isfile(card): #No existing card for account
                 return
 
-        with open(card, 'r') as f:
-            pin = f.read()
-            return pin
-
-
-    def is_valid_account(self, account, card):
-
-        """Check that account matches associated card."""
-
-        # ------------------------------------------------------------------------
-        #  The default value is the account name prepended to ".card"
-        #  ("<account>.card").  For example, if the account name was 55555, the
-        #  default card file is "55555.card".
-        # ------------------------------------------------------------------------
-        if card is None:
-            card = "%s.card" % account
-
-        card_info = None
-        msg = None
         try:
-            card_file = open(card, 'r')
-        except IOError as e:
-            msg = '%s: %s' % (e.strerror, card)
-            return (False, msg)
-        else:
-            card_info = card_file.read()
-            card_file.close()
-            if card_info != account:
-                msg = 'Account does not match card.'
-                return (False, msg)
-            return (True, 'OK - but probably not really :-)')
+            f = open(card, 'r')
+        except IOError:
+            # sys.stderr("Cannot open card file.")
+            sys.exit(255)
+
+        try:
+            fi = open(self.auth_file, 'r')
+            k_tmp = binascii.unhexlify(fi.read())
+            fi.close()
+        except IOError:
+            # sys.stderr.write('Cannot find file: %s' % self.auth_file)
+            sys.exit(255)
+
+        key_enc = k_tmp[0:AES.block_size]
+
+        enc_pin = f.read()
+        iv = enc_pin[0:AES.block_size]
+	pin = enc_pin[AES.block_size:]
+	f.close()        
+
+        try:
+            cipher = AES.new(key_enc, AES.MODE_CFB, iv)
+        except ValueError:
+            # sys.stderr.write('Wrong AES parameters')
+            sys.exit(63)
+
+	return cipher.decrypt(pin)
 
     def sanitize_query(self, options=None, pin=None):
 
@@ -394,11 +414,6 @@ def main():
         if options.card and not os.path.isfile(options.card):
             parser.error('Invalid card.')
         pin = atm.get_pin(card=options.card, account=options.account)
-    # Actual account validation against card for withdraw, deposit, get (balance) operations
-    #if (options.withdraw) or (options.deposit) or (options.get):
-    #    valid_account, msg = atm.is_valid_account(account=options.account, card=options.card)
-    #    if not valid_account:
-    #        parser.error(msg)
 
     # Prepare for communication
     query = atm.sanitize_query(options=options, pin=pin)

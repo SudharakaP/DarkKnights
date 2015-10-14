@@ -48,7 +48,7 @@ def atm_request(atm_request):
         pin = request['pin']
     except KeyError:
         return "255"
-    if pin is None and not pins.get(account_name):#for account creation
+    if pin is None and not pins.get(account_name):
         pin = str(randint(0,9999))
 
     if (request['new'] is not None) and (account_name not in customers):
@@ -134,7 +134,6 @@ def main():
             print_flush("created")
         except IOError:
             sys.exit(255)
-
 
     id_list = []
 

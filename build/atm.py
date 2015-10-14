@@ -13,15 +13,7 @@ from hmac import compare_digest
 import re
 
 def is_valid_amount_format(amount, max_amount=4294967295.99):
-
-    """Balances and currency amounts are specified as a number indicating a whole amount
-    and a fractional input separated by a period.  The fractional input is in decimal
-    and is always two digits and thus can include a leading 0 (should match /[0-9]{2}/).
-    The interpretation of the fractional amount v is that of having value equal to v/100
-    of a whole amount (akin to cents and dollars in US currency).
-    Command line input amounts are bounded from 0.00 to 4294967295.99 inclusively
-    but an account may accrue any non-negative balance over multiple transactions."""
-
+	
     pattern = re.compile(r'^(0|[1-9][0-9]*)\.\d{2}$')
     if not pattern.match(amount) or float(amount) > max_amount:
         return False
@@ -29,21 +21,12 @@ def is_valid_amount_format(amount, max_amount=4294967295.99):
 
 def is_valid_account_format(account):
 
-    """Account names are restricted to same characters as file names but they are
-    inclusively between 1 and 250 characters of length, and "." and ".." are valid
-    account names."""
-
     pattern = re.compile(r'^[_\-\.0-9a-z]{1,250}$')
     if not pattern.match(account):
         return False
     return True
 
 def is_valid_filename_format(file_name):
-
-    """File names are restricted to underscores, hyphens, dots, digits, and lowercase
-    alphabetical characters (each character should match /[_\-\.0-9a-z]/).  File names
-    are to be between 1 and 255 characters long. The special file names "." and ".."
-    are not allowed."""
 
     if file_name in ['.', '..']:
         return False
@@ -55,9 +38,6 @@ def is_valid_filename_format(file_name):
 
 def is_valid_ip_address(ip_address):
 
-    """Validate accordign to spec: 
-    i.e., four numbers between 0 and 255 separated by periods."""
-
     pattern = re.compile(r'(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})')
     match = pattern.match(ip_address)
     if not match or not match.groups():
@@ -68,7 +48,7 @@ def is_valid_ip_address(ip_address):
     return True
 
 def is_valid_port_number(port_number):
-    """Port number should be 4 or 5 digits between 1024 and 65535."""
+
     pattern = re.compile(r'^[1-9][0-9]{3,4}$')
     if not pattern.match(port_number):
         return False
@@ -90,65 +70,75 @@ class ATM:
 
         self.bank_ip_address = ip_address
         self.bank_port = int(port)
-        self.auth_file = auth_file # TODO: Use this to encrypt and/or generate card file
-
+        self.auth_file = auth_file
 
     def create_card(self, account, card, pin):
 
-        """Create card. Spec: Card files are created when atm is invoked with -n to
-        create a new account.  This must happen afer the bank has confirmed that the
-        account does not already exist.  The default value is the account name
-        prepended to ".card" ("<account>.card").  For example, if the account name
-        was 55555, the default card file is "55555.card"."""
-
         if card is None:
             card = "%s.card" % account
 
-        with open(card, 'w') as f:
-            try:
-                f.write(str(pin))
-            except IOError:
-                return False
-            return True
+        try:
+            f = open(card, 'w')
+        except IOError:
+            return False
+        
+        try:
+            fi = open(self.auth_file, 'r')
+            k_tmp = binascii.unhexlify(fi.read())
+            fi.close()
+        except IOError:
+            sys.exit(255)
+
+        auth_enc = k_tmp[0:AES.block_size]
+        iv = Random.new().read(AES.block_size)
+
+        try:
+            cipher = AES.new(auth_enc, AES.MODE_CFB, iv)
+        except ValueError:
+            sys.exit(63)
+        
+        enc_pin = iv + cipher.encrypt(str(pin))
+        
+        try:
+            f.write(enc_pin)
+        except IOError:
+            return False
+        return True
 
     def get_pin(self, card=None, account=None):
 
-        if not card:#No card specified
+        if not card: 
             card = "%s.card" % account
-            if not os.path.isfile(card):#No existing card for account
+            if not os.path.isfile(card): 
                 return
 
-        with open(card, 'r') as f:
-            pin = f.read()
-            return pin
-
-
-    def is_valid_account(self, account, card):
-
-        """Check that account matches associated card."""
-
-        if card is None:
-            card = "%s.card" % account
-
-        card_info = None
-        msg = None
         try:
-            card_file = open(card, 'r')
-        except IOError as e:
-            msg = '%s: %s' % (e.strerror, card)
-            return (False, msg)
-        else:
-            card_info = card_file.read()
-            card_file.close()
-            if card_info != account:
-                msg = 'Account does not match card.'
-                return (False, msg)
-            return (True, 'OK - but probably not really :-)')
+            f = open(card, 'r')
+        except IOError:
+            sys.exit(255)
+
+        try:
+            fi = open(self.auth_file, 'r')
+            k_tmp = binascii.unhexlify(fi.read())
+            fi.close()
+        except IOError:
+            sys.exit(255)
+
+        key_enc = k_tmp[0:AES.block_size]
+
+        enc_pin = f.read()
+        iv = enc_pin[0:AES.block_size]
+	pin = enc_pin[AES.block_size:]
+	f.close()        
+
+        try:
+            cipher = AES.new(key_enc, AES.MODE_CFB, iv)
+        except ValueError:
+            sys.exit(63)
+
+	return cipher.decrypt(pin)
 
     def sanitize_query(self, options=None, pin=None):
-
-        """Sanitize query by transforming relevant options from options object into
-        JSON-encoded string."""
 
         query = dict(zip(['account', 'new', 'deposit', 'withdraw', 'get', 'new', 'pin'], 
                         [options.account, options.new, options.deposit, options.withdraw, options.get, options.new, pin]
@@ -157,9 +147,6 @@ class ATM:
 
     def communicate_with_bank(self, p_msg):
 
-        """Send validated, encrypted and authenticated query to bank.
-        Based on kgover's client.py code but adds call to receive response.
-        Expects the encrypted and authenticated response to be a JSON-encoded string."""
         try:
             fi = open(self.auth_file, 'r')
             k_tmp = binascii.unhexlify(fi.read())
