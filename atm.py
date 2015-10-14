@@ -150,7 +150,7 @@ class ATM:
             cipher = AES.new(auth_enc, AES.MODE_CFB, iv)
         except ValueError:
             # sys.stderr.write('Wrong AES parameters')
-            sys.exit(63)
+            sys.exit(255)
         
         enc_pin = iv + cipher.encrypt(str(pin))
         
@@ -192,7 +192,7 @@ class ATM:
             cipher = AES.new(key_enc, AES.MODE_CFB, iv)
         except ValueError:
             # sys.stderr.write('Wrong AES parameters')
-            sys.exit(63)
+            sys.exit(255)
 
 	return cipher.decrypt(pin)
 
@@ -229,7 +229,7 @@ class ATM:
             cipher = AES.new(key_enc, AES.MODE_CFB, iv)
         except ValueError:
             # sys.stderr.write('Wrong AES parameters')
-            sys.exit(63)
+            sys.exit(255)
 
         outgoing_pkt_id = str(datetime.datetime.now())
         p_msg = p_msg + outgoing_pkt_id
@@ -244,12 +244,12 @@ class ATM:
         # Create a socket (SOCK_STREAM means a TCP socket)
         try:    
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            # Connect to server and send data           
+            sock.connect((self.bank_ip_address, self.bank_port))
         except socket.error:
             # sys.stderr.write('Socket error')
             sys.exit(63)
 
-        # Connect to server and send data           
-        sock.connect((self.bank_ip_address, self.bank_port))
         sent = sock.sendall(pkt)
         if sent is not None:
             # sys.stderr.write("Sending packets failed")
@@ -324,25 +324,75 @@ class ATM:
 def main():
 
     parser = ATMOptionParser()
-    parser.add_option("-a", action="store", dest="account")
-    parser.add_option("-n", action="store", dest="new")
-    parser.add_option("-d", action="store", dest="deposit")
-    parser.add_option("-w", action="store", dest="withdraw")
-    parser.add_option("-g", action="store_true", dest="get")
-    parser.add_option("-p", action="store", dest="port", default='3000', type="string")
-    parser.add_option("-i", action="store", dest="ip_address", default="127.0.0.1", type="string")
-    parser.add_option("-s", action="store", dest="auth", default="bank.auth")
-    parser.add_option("-c", action="store", dest="card")
+    parser.add_option("-a", action="append", dest="account", default=[])
+    parser.add_option("-n", action="append", dest="new", default=[])
+    parser.add_option("-d", action="append", dest="deposit", default=[])
+    parser.add_option("-w", action="append", dest="withdraw", default=[])
+    parser.add_option("-g", action="count", dest="get")
+    parser.add_option("-p", action="append", dest="port", default=['3000'])
+    parser.add_option("-i", action="append", dest="ip_address", default=["127.0.0.1"])
+    parser.add_option("-s", action="append", dest="auth", default=["bank.auth"])
+    parser.add_option("-c", action="append", dest="card", default=[])
 
     (options, args) = parser.parse_args()
 
     # ------------------------------------------------------------------------
     #  Basic input validation
     # ------------------------------------------------------------------------
+    if options.account:
+        if len(options.account) != 1:
+            parser.error('Duplicated args...')
+        else:
+            options.account = options.account[0]
+    else:
+        options.account = None
+    if options.deposit:
+        if len(options.deposit) != 1:
+            parser.error('Duplicated args...')
+        else:
+            options.deposit = options.deposit[0]
+    else:
+        options.deposit = None
+    if options.new:
+        if len(options.new) != 1:
+            parser.error('Duplicated args...')
+        else:
+            options.new = options.new[0]
+    else:
+        options.new = None
+    if options.withdraw:
+        if len(options.withdraw) != 1:
+            parser.error('Duplicated args...')
+        else:
+            options.withdraw = options.withdraw[0]
+    else:
+        options.withdraw = None
+    if options.card:
+        if len(options.card) != 1:
+            parser.error('Duplicated args...')
+        else:
+            options.card = options.card[0]
+    else:
+        options.card = None
+    if options.port:
+        if len(options.port) not in [1, 2]:
+            parser.error('Duplicated args...')
+        else:
+            options.port = options.port[-1]
+    if options.ip_address:
+        if len(options.ip_address) not in [1,2]:
+            parser.error('Duplicated args...')
+        else:
+            options.ip_address = options.ip_address[-1]
+    if options.auth:
+        if len(options.auth) not in [1,2]:
+            parser.error('Duplicated args...')
+        else:
+            options.auth = options.auth[-1]
 
-    # Check for any repeated cmd-line options
-    if len(sys.argv) != len(set(sys.argv)):
-        parser.error('Repeated cmd-lin arguments')
+    # Check whether option -g is passed more than once
+    if options.get is not None and options.get != 1:
+                parser.error('Too many -g...')
 
     # Check to see if there's any additional arguments
     if len(args) > 0:
