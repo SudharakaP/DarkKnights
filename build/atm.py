@@ -178,7 +178,9 @@ class ATM:
             sys.exit(63)
 
         outgoing_pkt_id = str(datetime.datetime.now())
-        c_msg = iv + cipher.encrypt(p_msg + outgoing_pkt_id) 
+        p_msg = p_msg + outgoing_pkt_id
+        pkt_len = '%d' % len(p_msg)
+        c_msg = iv + cipher.encrypt(p_msg.zfill(987) + pkt_len.zfill(5)) 
 
         hash = HMAC.new(key_mac)
         hash.update(c_msg)
@@ -191,9 +193,7 @@ class ATM:
             sys.exit(63)
 
         sock.connect((self.bank_ip_address, self.bank_port))
-
         sent = sock.sendall(pkt)
-
         if sent is not None:
             sys.exit(63)
         
@@ -204,7 +204,7 @@ class ATM:
         except socket.error:
             sys.exit(63)
 
-        if (len(pkt) > 0) and (len(pkt) < 1024):
+        if len(pkt) > 0:
             h_tag = pkt[0:16]
             c_tmp = pkt[16:]
             iv = c_tmp[0:AES.block_size]
@@ -221,8 +221,9 @@ class ATM:
 
             if compare_digest(h_tag, hash.digest()):
                 p_tmp = cipher.decrypt(c_msg)
-                incoming_pkt_id = p_tmp[-26:]
-                p_msg = p_tmp[:-26]
+                pkt_len = p_tmp[-5:]
+                incoming_pkt_id = p_tmp[-31:-5]
+                p_msg = p_tmp[987-int(pkt_len):-31]
                 if incoming_pkt_id == outgoing_pkt_id:
                     return p_msg
                 else:
