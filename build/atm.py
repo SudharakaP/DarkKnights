@@ -95,7 +95,7 @@ class ATM:
         try:
             cipher = AES.new(auth_enc, AES.MODE_CFB, iv)
         except ValueError:
-            sys.exit(63)
+            sys.exit(255)
         
         enc_pin = iv + cipher.encrypt(str(pin))
         
@@ -134,7 +134,7 @@ class ATM:
         try:
             cipher = AES.new(key_enc, AES.MODE_CFB, iv)
         except ValueError:
-            sys.exit(63)
+            sys.exit(255)
 
 	return cipher.decrypt(pin)
 
@@ -233,9 +233,9 @@ def main():
 
     (options, args) = parser.parse_args()
 
-
-    if len(sys.argv) != len(set(sys.argv)):
-        parser.error('Repeated cmd-lin arguments')
+    # Check whether option -g takes a value
+    if sys.argv[-2] == "-g":
+        parser.error('Cmd-line option -g takes a value')
 
     if len(args) > 0:
         parser.error('Additional argument error')
