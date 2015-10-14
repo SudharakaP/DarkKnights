@@ -36,6 +36,7 @@ def custom_round(flt):
 
 # Handles the SIGTERM and SIGINT calls.
 def handler(signum, frame):
+    # sys.stderr.write("SIGTERM exit")
     sys.exit(0)
 
 def encrypt_pin(key, pin):
@@ -71,8 +72,9 @@ def atm_request(atm_request):
         pin = request['pin']
     except KeyError:
         return "255"
+
     if pin is None and not pins.get(account_name):#for account creation
-        #sys.stderr.write("NEW: %s - %s \n" % (pin, pins.get(account_name)))
+        # sys.stderr.write("NEW: %s - %s \n" % (pin, pins.get(account_name)))
         pin = str(randint(0,9999))
 
     # ------------------------------------------------------------------------
@@ -124,6 +126,7 @@ def message_to_atm(p_msg, auth_file):
         k_tmp = binascii.unhexlify(fi.read())
         fi.close()
     except IOError:
+        # sys.stderr.write('Cannot find file: %s' % auth_file)
         sys.exit(255)
 
     key_enc = k_tmp[0:AES.block_size]
@@ -146,6 +149,8 @@ def message_to_atm(p_msg, auth_file):
 # ----------------------------------------------------------------------------
 class BankParser(OptionParser):
     def error(self, message=None):
+        # if msg:
+        #     sys.stderr.write(msg)
         sys.exit(255)
 
 def main():
@@ -192,6 +197,7 @@ def main():
             fo.close()
             print_flush("created")
         except IOError:
+            # sys.stderr.write('Cannot find file: bank.auth')
             sys.exit(255)
 
     # ------------------------------------------------------------------------
@@ -274,6 +280,7 @@ def main():
             try:
                 cipher = AES.new(key_enc, AES.MODE_CFB, iv)
             except ValueError:
+                # sys.stderr.write('Wrong AES parameters')
                 print_flush('protocol_error')
                 continue
 
@@ -305,6 +312,8 @@ def main():
                             customers[account_name] = customers_temp[account_name]
                         except KeyError: #customers_temp may not have been populated if account verification failed
                             pass
+                    # else:
+                        # sys.stderr.write("Data from bank atm not sent.")
 
                 else:
                     print_flush('protocol_error')
