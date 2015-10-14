@@ -150,7 +150,7 @@ class ATM:
             cipher = AES.new(auth_enc, AES.MODE_CFB, iv)
         except ValueError:
             # sys.stderr.write('Wrong AES parameters')
-            sys.exit(63)
+            sys.exit(255)
         
         enc_pin = iv + cipher.encrypt(str(pin))
         
@@ -192,7 +192,7 @@ class ATM:
             cipher = AES.new(key_enc, AES.MODE_CFB, iv)
         except ValueError:
             # sys.stderr.write('Wrong AES parameters')
-            sys.exit(63)
+            sys.exit(255)
 
 	return cipher.decrypt(pin)
 
@@ -340,9 +340,9 @@ def main():
     #  Basic input validation
     # ------------------------------------------------------------------------
 
-    # Check for any repeated cmd-line options
-    if len(sys.argv) != len(set(sys.argv)):
-        parser.error('Repeated cmd-lin arguments')
+    # Check whether option -g takes a value
+    if sys.argv[-2] == "-g":
+        parser.error('Cmd-line option -g takes a value')
 
     # Check to see if there's any additional arguments
     if len(args) > 0:
