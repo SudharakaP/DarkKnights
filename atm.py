@@ -208,7 +208,9 @@ class ATM:
             sys.exit(63)
 
         outgoing_pkt_id = str(datetime.datetime.now())
-        c_msg = iv + cipher.encrypt(p_msg + outgoing_pkt_id) 
+        p_msg = p_msg + outgoing_pkt_id
+        pkt_len = '%d' % len(p_msg)
+        c_msg = iv + cipher.encrypt(p_msg.zfill(987) + pkt_len.zfill(5)) 
 
         hash = HMAC.new(key_mac)
         hash.update(c_msg)
@@ -223,9 +225,7 @@ class ATM:
 
         # Connect to server and send data           
         sock.connect((self.bank_ip_address, self.bank_port))
-
         sent = sock.sendall(pkt)
-
         if sent is not None:
             sys.exit(63)
         
@@ -247,14 +247,23 @@ class ATM:
         #    constant time function form the hmac library to guard against
         #    timing attacks.
         #
-        #  * If the message is authentic, decrypt it. 
+        #  * Check the hash of the bank's response and if valid, decrypt it.
+        #    The decrypted message has three parts starting from the end of
+        #    the string:
+        #
+        #        a. 5 bytes ....... length of the plaintext message
+        #        b. 26 bytes ...... Packet ID (datetime stamp)
+        #        c. 961 bytes ..... Plaintext message zero padded
+        #
+        #    The zero padding will need to be stripped off the 961 bytes by
+        #    using the first 5 bytes.
         #
         #  * Check the packet ID being returned from the bank and make sure
         #    it matches the packet ID used for the outgoing packet.  This will
         #    defend against replay attacks on the ATM.
         #
         # --------------------------------------------------------------------
-        if (len(pkt) > 0) and (len(pkt) < 1024):
+        if len(pkt) > 0:
             h_tag = pkt[0:16]
             c_tmp = pkt[16:]
             iv = c_tmp[0:AES.block_size]
@@ -272,8 +281,9 @@ class ATM:
             if compare_digest(h_tag, hash.digest()):
                 #TODO: catch potential error
                 p_tmp = cipher.decrypt(c_msg)
-                incoming_pkt_id = p_tmp[-26:]
-                p_msg = p_tmp[:-26]
+                pkt_len = p_tmp[-5:]
+                incoming_pkt_id = p_tmp[-31:-5]
+                p_msg = p_tmp[987-int(pkt_len):-31]
                 if incoming_pkt_id == outgoing_pkt_id:
                     return p_msg
                 else:
