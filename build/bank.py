@@ -88,7 +88,8 @@ def message_to_atm(p_msg, auth_file):
 
     iv = Random.new().read(AES.block_size)
     cipher = AES.new(key_enc, AES.MODE_CFB, iv)
-    c_msg = iv + cipher.encrypt(p_msg) 
+    pkt_len = '%d' % len(p_msg)
+    c_msg = iv + cipher.encrypt(p_msg.zfill(987) + pkt_len.zfill(5)) 
 
     hash = HMAC.new(key_mac)
     hash.update(c_msg)
@@ -152,7 +153,7 @@ def main():
             print_flush('protocol_error')
             continue
 
-        if (len(pkt) > 0) and (len(pkt) < 1024):
+        if len(pkt) > 0:
             h_tag = pkt[0:16]
             c_tmp = pkt[16:]
 
@@ -170,8 +171,9 @@ def main():
 
             if compare_digest(h_tag, hash.digest()):
                 p_tmp = cipher.decrypt(c_msg)
-                pkt_id = p_tmp[-26:]
-                p_msg = p_tmp[:-26]
+                pkt_len = p_tmp[-5:]
+                pkt_id = p_tmp[-31:-5]
+                p_msg = p_tmp[987-int(pkt_len):-31]
                 if pkt_id not in id_list:
                     id_list.append(pkt_id)
                     message = atm_request(p_msg)
