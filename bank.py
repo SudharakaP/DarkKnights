@@ -15,6 +15,7 @@ from Crypto.Hash import HMAC
 from Crypto.Cipher import AES
 from Crypto import Random
 from hmac import compare_digest
+from datetime import datetime
 import binascii, socket
 import signal
 from random import randint
@@ -290,31 +291,44 @@ def main():
                 pkt_id = p_tmp[-31:-5]
                 p_msg = p_tmp[987-int(pkt_len):-31]
                 if pkt_id not in id_list:
+                    order_correct = False
+                    if len(id_list) == 0:
+                        order_correct = True
+                    else:
+                        id_format = "%Y-%m-%d %H:%M:%S.%f"
+                        prev_id = datetime.strptime(id_list[-1], id_format)
+                        curr_id = datetime.strptime(pkt_id, id_format)
+                        if prev_id < curr_id:
+                            order_correct = True
+                        else:
+                            order_correct = False
                     id_list.append(pkt_id)
-                    message = atm_request(p_msg)
-                    if message != '255':
-                        temp_message = json.loads(message)
-                        try:
-                            del temp_message['pin']
-                        except KeyError:
-                            pass
-                        temp_message = json.dumps(temp_message)
-                        print_flush(str(temp_message))
+                    if order_correct:
+                        message = atm_request(p_msg)
+                        if message != '255':
+                            temp_message = json.loads(message)
+                            try:
+                                del temp_message['pin']
+                            except KeyError:
+                                pass
+                            temp_message = json.dumps(temp_message)
+                            print_flush(str(temp_message))
 
-                    # Append packet ID, encrypt and sends the message to atm.
-                    message = message + pkt_id
-                    enc_message = message_to_atm(message, options.AUTH_FILE)
+                        # Append packet ID, encrypt and sends the message to atm.
+                        message = message + pkt_id
+                        enc_message = message_to_atm(message, options.AUTH_FILE)
 
-                    # Update the customer dictionary only if confimation sent to ATM
-                    sent = connection.sendall(enc_message)
-                    if sent is None:
-                        try:
-                            customers[account_name] = customers_temp[account_name]
-                        except KeyError: #customers_temp may not have been populated if account verification failed
-                            pass
-                    # else:
-                        # sys.stderr.write("Data from bank atm not sent.")
-
+                        # Update the customer dictionary only if confimation sent to ATM
+                        sent = connection.sendall(enc_message)
+                        if sent is None:
+                            try:
+                                customers[account_name] = customers_temp[account_name]
+                            except KeyError: #customers_temp may not have been populated if account verification failed
+                                pass
+                        # else:
+                            # sys.stderr.write("Data from bank atm not sent.")
+                    else:
+                        print_flush('protocol_error')
                 else:
                     print_flush('protocol_error')
             else:
