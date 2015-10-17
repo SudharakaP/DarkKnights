@@ -12,12 +12,12 @@ import os
 import json
 import binascii
 import socket
-import datetime
 from optparse import OptionParser
 from Crypto.Hash import HMAC
 from Crypto.Cipher import AES
 from Crypto import Random
 from hmac import compare_digest
+from datetime import datetime
 import re
 
 # ----------------------------------------------------------------------------
@@ -231,7 +231,9 @@ class ATM:
             # sys.stderr.write('Wrong AES parameters')
             sys.exit(255)
 
-        outgoing_pkt_id = str(datetime.datetime.now())
+        id_format = "%Y-%m-%d %H:%M:%S.%f"
+        curr_id = datetime.now()
+        outgoing_pkt_id = curr_id.strftime(id_format)
         p_msg = p_msg + outgoing_pkt_id
         pkt_len = '%d' % len(p_msg)
         c_msg = iv + cipher.encrypt(p_msg.zfill(987) + pkt_len.zfill(5)) 
