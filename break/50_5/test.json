@@ -1,6 +1,6 @@
 {
     "type": "correctness",
-    "target_team": "gray_hat",
+    "target_team": "50",
     "inputs": [
         {"input":["-p", "%PORT%", "-i", "%IP%", "-a", ".", "-n", "11.00"],"base64":false}
     ]
