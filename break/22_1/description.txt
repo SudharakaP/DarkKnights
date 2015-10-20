@@ -1,1 +1,2 @@
-
+The "Valid Inputs" section of the Specs (https://coursera.builditbreakit.org/static/doc/fall2015coursera/spec/index.html) mentions that "account names are restricted to same characters as file names but they are inclusively between 1 and 250 characters of length" - each character should match /[_\-\.0-9a-z]/). So the account name "-g" should be accepted in the following command:
+./atm -a -g -n 11.00

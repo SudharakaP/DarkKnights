@@ -1,1 +1,7 @@
-
+{
+    "type": "correctness",
+    "builder": "BR_In_The_Middle",
+    "inputs": [
+        {"input":["-p", "%PORT%", "-i", "%IP%", "-a", "-g", "-n", "10.30"],"base64":false}
+    ]
+}
