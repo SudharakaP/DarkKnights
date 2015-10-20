@@ -1,1 +1,7 @@
-
+{
+    "type": "correctness",
+    "builder": "gray_hat",
+    "inputs": [
+        {"input":["-p", "%PORT%", "-i", "%IP%", "-a", ".", "-n", "10.30"],"base64":false}
+    ]
+}
