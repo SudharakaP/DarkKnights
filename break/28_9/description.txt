@@ -1,0 +1,2 @@
+The specs (https://coursera.builditbreakit.org/static/doc/fall2015coursera/spec/index.html) mention that "all other errors, specified throughout this document or unrecoverable errors not explicitly discussed, should prompt the program to exit with return code 255". This includes the situation when the target IP does not exist, as per the following command:
+./atm -i 255.255.255.255 -a ted -n 11.00
