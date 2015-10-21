@@ -1,0 +1,2 @@
+The examples from the ATM specs (https://coursera.builditbreakit.org/static/doc/fall2015coursera/spec/atm.html) clearly show that parameters should not be repeated (as this could lead to confusion) as in the following atm command, which should result in a 255 exit:
+./atm -a ted -n 11.00 -c test -a ted2 -n 11.00 -c test2 
