@@ -1,0 +1,2 @@
+The "Valid Inputs" section of the Specs (https://coursera.builditbreakit.org/static/doc/fall2015coursera/spec/index.html) mentions that "account names are restricted to same characters as file names but they are inclusively between 1 and 250 characters of length" - each character should match /[_\-\.0-9a-z]/). And "." and ".." are valid account names. So the account name "." or ".." should be accepted using the following commands:
+./atm -a . -n 11.00
