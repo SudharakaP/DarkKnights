@@ -1,0 +1,7 @@
+This is a simple replay (substitution) attack.  The attack will run three
+transactions, an account creation and two deposits.  Each time a transaction is
+seen by the MITM, it is pushed onto a FIFO.  For the first two transactions
+everything is allowed to proceed as normal.  However, when we run the second
+deposit, the MITM will instead "replay" the first deposit replacing the second
+deposit's transaction.  So instead of getting two unique deposits, the bank
+will get two identical deposits.
