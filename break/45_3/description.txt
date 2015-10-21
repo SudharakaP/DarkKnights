@@ -1,0 +1,2 @@
+The "Valid Inputs" section of the Specs (https://coursera.builditbreakit.org/static/doc/fall2015coursera/spec/index.html) mentions that "File names are restricted to underscores, hyphens, dots, digits, and lowercase alphabetical characters (each character should match /[_\-\.0-9a-z]/). File names are to be between 1 and 255 characters long. The special file names "." and ".." are not allowed. So the file name "-c" should be accepted using the following commands:
+./atm -a bob -n 11.00 -c -c
