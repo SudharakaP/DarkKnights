@@ -2,7 +2,7 @@
     "type": "correctness",
     "target_team": 78,
     "inputs": [
-        {"input":["-p", "%PORT%", "-i", "%IP%", "-a", "-g", "-n", "11.00"],"base64":false}
+        {"input":["-p", "%PORT%", "-i", "%IP%", "-a", "-g", "-n", "11.00"],"base64":false},
 	{"input":["-p", "%PORT%", "-i", "%IP%", "-a", "-g", "-g"],"base64":false}
     ]
 }
