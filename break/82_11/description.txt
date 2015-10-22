@@ -1,0 +1,5 @@
+This is a simple packtet tampering attack.  The attack will run three
+transactions, an account creation and two deposits.  Each time a transaction is
+seen by the MITM, it is pushed onto a FIFO.  All transactions are subject to 
+packet size increase, which leads to decryption errors. These should be caught 
+and a protocol_error should be returned.
