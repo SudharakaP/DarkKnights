@@ -1,0 +1,7 @@
+{
+    "type": "correctness",
+    "target_team": 82,
+    "inputs": [
+            {"input":["-h"]}
+    ]
+}
