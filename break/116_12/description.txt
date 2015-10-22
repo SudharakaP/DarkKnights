@@ -1,0 +1,6 @@
+This is a simple reflection attack.  The attack will send several transactions.
+Each time a transaction is seen by the MITM, it is pushed onto a FIFO.  All
+transactions going from the ATM to the bank are just forwarded on by the MITM
+(no modifications).  However, all transactions going from the bank back to the
+ATM are dropped and never send to the ATM.  Instead, the ATM's own transactions
+(the same one sent to the bank) is reflected back to the ATM.
