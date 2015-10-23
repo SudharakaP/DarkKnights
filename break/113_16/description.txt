@@ -1,0 +1,2 @@
+The ATM specs (https://coursera.builditbreakit.org/static/doc/fall2015coursera/spec/atm.html) list the valid parameters. The presence of invalid (singleton) arguments such as 'test' in the following command should return a 255 insted of proceeding with the account creation:
+./atm -a teddy7 -n 10.00 test
