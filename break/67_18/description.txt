@@ -1,0 +1,2 @@
+The specs (https://coursera.builditbreakit.org/static/doc/fall2015coursera/spec/index.html) mention that "Command line input amounts are bounded from 0.00 to 4294967295.99 inclusively but an account may accrue any non-negative balance over multiple transactions." Hence 4294967296.00 should be rejected as per the following command;
+./atm -a ted -n 4294967296.00
