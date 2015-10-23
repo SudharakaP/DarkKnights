@@ -1,0 +1,1 @@
+The ATM specs clearly indicate that the withdrawal amount must be greater than 0.00, and the remaining balance must be nonnegative. The test case provided should therefore be accepted and not return 225.
