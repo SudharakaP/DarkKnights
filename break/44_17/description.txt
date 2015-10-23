@@ -1,0 +1,2 @@
+The specs (https://coursera.builditbreakit.org/static/doc/fall2015coursera/spec/index.html) mention that "You should not implement --, which is optional for POSIX compliance." Hence -- should be rejected as per the following command;
+./atm --a ted --n 10.30
