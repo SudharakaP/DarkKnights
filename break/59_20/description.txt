@@ -1,0 +1,4 @@
+This is a guess of the cardfile contents.  The contents of the card file should
+be encrypted and being able to guess it's contents is an integrity violation.  In
+this case team 59 did not put anything in the cardfile and did not use encryption
+so the guess is an empty string.
