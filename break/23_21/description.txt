@@ -1,0 +1,2 @@
+The specs (https://coursera.builditbreakit.org/static/doc/fall2015coursera/spec/index.html) mention that "IP addresses are restricted to IPv4 32-bit addresses" so address outside the range, such 0.256.0.0 should force the atm client to exit with 255 as in the following command:
+./atm -i 0.256.0.0 -a ted -n 11.00
