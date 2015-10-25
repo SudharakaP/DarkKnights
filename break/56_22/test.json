@@ -1,0 +1,7 @@
+{
+    "type": "confidentiality",
+    "target_team": 56,
+    "inputs": [
+            {"input":["-p", "%PORT%", "-i", "%IP%", "-a", "%ACCOUNT%", "-n", "44.00", "-c", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"]}
+    ]
+}
