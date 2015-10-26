@@ -1,0 +1,1 @@
+The encryption of the communication with the bank has a serious weakness whereby the amounts appear in plaintext in the buffers. It is therefore easily modifiable using a regular expression. The HMAC does not help in detecting this packet modification.
