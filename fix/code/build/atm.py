@@ -178,7 +178,7 @@ class ATM:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.connect((self.bank_ip_address, self.bank_port))
         except socket.error:
-            sys.exit(63)
+            sys.exit(255)
 
         sent = sock.sendall(pkt)
         if sent is not None:
