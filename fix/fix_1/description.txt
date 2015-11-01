@@ -1,0 +1,7 @@
+With regard to test submission 4535, this error is due to the incorrect exit code
+when the ATM tries to connect to a wrong port or ip address. In line 181 of the ./atm 
+the correct error code should be 255 but instead the error code was 63. 
+Correcting this error code to 255 solves this issue. 
+
+In addition it should also be noted that submissions 4765 and 4763 are duplicates as 
+well as submissions 4535 and 3273. 
