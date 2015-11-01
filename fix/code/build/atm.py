@@ -63,6 +63,9 @@ def print_flush (S_in) :
 class ATMOptionParser(OptionParser):
     def error(self, msg=None):
         sys.exit(255)
+        
+    def print_help(self):
+    	sys.exit(255)
 
 class ATM:
 

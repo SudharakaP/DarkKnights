@@ -1,0 +1,5 @@
+With regard to test submission 2876, this error is due to not exiting properly when
+the -h option is inserted to the ./atm. By default the -h option provides a list of 
+command line options but according to the problem specification we need to overide 
+the default behaviour by exiting with 255 when -h is passed as an option. Correcting 
+this behaviour at line 66 of ./atm solves this issue.
