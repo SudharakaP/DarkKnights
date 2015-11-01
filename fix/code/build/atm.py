@@ -38,7 +38,7 @@ def is_valid_filename_format(file_name):
 
 def is_valid_ip_address(ip_address):
 
-    pattern = re.compile(r'(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})')
+    pattern = re.compile(r'^([1-9]\d{0,2}|[0])\.([1-9]\d{0,2}|[0])\.([1-9]\d{0,2}|[0])\.([1-9]\d{0,2}|[0])$')
     match = pattern.match(ip_address)
     if not match or not match.groups():
         return False
