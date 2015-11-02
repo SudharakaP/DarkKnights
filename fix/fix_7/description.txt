@@ -1,0 +1,3 @@
+With regard to test submission 2355, this error is due to the ./atm accepting card 
+names of length zero which is a violation of the program specification. This issue 
+could be easily handled by inserting a check for card file length at line 269 of ./atm.
