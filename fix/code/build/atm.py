@@ -347,7 +347,10 @@ def main():
             parser.error('Invalid card.')
         pin = atm.get_pin(card=options.card, account=options.account)
 
-    query = atm.sanitize_query(options=options, pin=pin)
+    try:
+        query = atm.sanitize_query(options=options, pin=pin)
+    except UnicodeDecodeError:
+        sys.exit(255)
 
     raw_response = atm.communicate_with_bank(query)
     
