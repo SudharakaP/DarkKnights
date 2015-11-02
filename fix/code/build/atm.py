@@ -334,6 +334,10 @@ def main():
     if options.new and options.card and os.path.isfile(options.card):
         parser.error('Card already exists: %s' % options.card)
 
+    if options.new and not options.card:
+        card = "%s.card" % options.account
+        if os.path.isfile(card):
+            parser.error('Card already exists: %s' % card)
 
     atm = ATM(ip_address=options.ip_address, port=options.port, auth_file=options.auth)
 
