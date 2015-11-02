@@ -89,7 +89,7 @@ class ATM:
             fi = open(self.auth_file, 'r')
             k_tmp = binascii.unhexlify(fi.read())
             fi.close()
-        except IOError:
+        except (IOError, TypeError):
             sys.exit(255)
 
         auth_enc = k_tmp[0:AES.block_size]
@@ -124,7 +124,7 @@ class ATM:
             fi = open(self.auth_file, 'r')
             k_tmp = binascii.unhexlify(fi.read())
             fi.close()
-        except IOError:
+        except (IOError, TypeError):
             sys.exit(255)
 
         key_enc = k_tmp[0:AES.block_size]
@@ -154,7 +154,7 @@ class ATM:
             fi = open(self.auth_file, 'r')
             k_tmp = binascii.unhexlify(fi.read())
             fi.close()
-        except IOError:
+        except (IOError, TypeError):
             sys.exit(255)
 
         key_enc = k_tmp[0:AES.block_size]
