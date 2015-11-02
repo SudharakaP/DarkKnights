@@ -266,6 +266,8 @@ def main():
     if options.card:
         if len(options.card) != 1:
             parser.error('Duplicated args...')
+        elif options.card[0] == "":
+            parser.error('Card name cannot be length zero')
         else:
             options.card = options.card[0]
     else:
