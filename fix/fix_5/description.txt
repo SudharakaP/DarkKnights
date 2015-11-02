@@ -1,0 +1,5 @@
+With regard to test submission 2085, this error is due to a bank authentication file 
+being passed as a card file. This results in the program trying to handle the bank.auth
+file as a card file and hence crashing with an exception. Properly handling this 
+exception and exiting with 255 resolves this issue. The issue is corrected at line 350
+of ./atm.

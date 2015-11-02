@@ -1,0 +1,6 @@
+With regard to test submission 1977, this error is due to the fact that the card 
+specified as another user's name is not detected. When "bob" creates a card with the 
+name ted.card, and then the account "ted" is created with no card name provided, the 
+transaction should fail. This behaviour can be corrected by checking whether the card 
+exists whenever a new account is created without the card name specified. The issue 
+is corrected at line 336 of ./atm. 

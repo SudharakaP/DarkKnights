@@ -89,7 +89,7 @@ class ATM:
             fi = open(self.auth_file, 'r')
             k_tmp = binascii.unhexlify(fi.read())
             fi.close()
-        except IOError:
+        except (IOError, TypeError):
             sys.exit(255)
 
         auth_enc = k_tmp[0:AES.block_size]
@@ -124,7 +124,7 @@ class ATM:
             fi = open(self.auth_file, 'r')
             k_tmp = binascii.unhexlify(fi.read())
             fi.close()
-        except IOError:
+        except (IOError, TypeError):
             sys.exit(255)
 
         key_enc = k_tmp[0:AES.block_size]
@@ -154,7 +154,7 @@ class ATM:
             fi = open(self.auth_file, 'r')
             k_tmp = binascii.unhexlify(fi.read())
             fi.close()
-        except IOError:
+        except (IOError, TypeError):
             sys.exit(255)
 
         key_enc = k_tmp[0:AES.block_size]
@@ -334,6 +334,10 @@ def main():
     if options.new and options.card and os.path.isfile(options.card):
         parser.error('Card already exists: %s' % options.card)
 
+    if options.new and not options.card:
+        card = "%s.card" % options.account
+        if os.path.isfile(card):
+            parser.error('Card already exists: %s' % card)
 
     atm = ATM(ip_address=options.ip_address, port=options.port, auth_file=options.auth)
 
@@ -343,7 +347,10 @@ def main():
             parser.error('Invalid card.')
         pin = atm.get_pin(card=options.card, account=options.account)
 
-    query = atm.sanitize_query(options=options, pin=pin)
+    try:
+        query = atm.sanitize_query(options=options, pin=pin)
+    except UnicodeDecodeError:
+        sys.exit(255)
 
     raw_response = atm.communicate_with_bank(query)
     

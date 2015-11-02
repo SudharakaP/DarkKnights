@@ -1,0 +1,6 @@
+With regard to test submission 4163, this error is due to a card file being passed as 
+a bank authentication file. This results in the program trying to process the card file
+as a bank authentication file and the outcome is a TypeError. Properly handling this 
+exception and exiting with 255 resolves this issue. The exceptions are handled at all 
+points at which the authentication file is processed by the program. The issue is 
+corrected at lines, 92, 127 and 157.
