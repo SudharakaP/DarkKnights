@@ -1,0 +1,4 @@
+With regard to test submission 2556 this attack is due to not returning a correct 
+packet to the ATM on the last transfer. The ATM does not properly check for a zero 
+sized packet. Adding a simple else clause to the conditional checking the packet size 
+catches this attack. 
