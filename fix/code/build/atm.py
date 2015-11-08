@@ -220,6 +220,8 @@ class ATM:
                     sys.exit(63)
             else:
                 sys.exit(63)
+        else:
+            sys.exit(63)
 
 def main():
 
