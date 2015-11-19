@@ -26,6 +26,18 @@ The detailed problem specification is given at the [ATM Protocol page][atm_prot]
 
 The scoring details for the Capstone competition is given at the [Contest Details page][contest_details]
 
+## BreakIT BuildIT and FixIT Round Details
+
+Our program passed all correctness and performance tests in the BreakIT round. A screenshot of the submission is given [>>here<<](https://drive.google.com/file/d/0B3wxNacs5YCeRHRyRVFiQy1aMlE/view?usp=sharing). 
+
+All bugs and vulnerabilities submitted by our team and their is given at the following spreadsheet. 
+
+[Bugs and Vulnerabilities Submitted - DarkKnights](https://docs.google.com/a/mun.ca/spreadsheets/d/1NF_7x42T_bKEm-KebHvkf8bfCzgYY2lAPdoe4g9Hwfg/edit?usp=sharing)
+
+All bugs and vulnerabilities submitted against our team and their is given at the following spreadsheet. 
+
+[Bugs and Vulnerabilities Against Us - DarkKnights](https://docs.google.com/a/mun.ca/spreadsheets/d/1oZaY_aGn50vltuZSTTwfxD8pFPAyJ1Xyutnvcm7xvLM/edit?usp=sharing)
+
 [keith]: <https://www.linkedin.com/pub/keith-gover/3/905/718>
 [johann]: <https://ie.linkedin.com/in/johannroturier>
 [sudharaka]: <https://ca.linkedin.com/in/sudharakap>
