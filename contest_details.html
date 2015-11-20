@@ -1,0 +1,82 @@
+<html><body id="preview">
+<h2><a id="Scoring_0"></a>Scoring</h2>
+<ul>
+<li>
+<p>Builder teams and breaker teams are scored separately, but you are welcome to compete as both. Only builder teams participate in the Build-it and Fix-it phases. Breaker teams participate in the Break-it phase.</p>
+</li>
+<li>
+<p>Many of the points are based on the number of teams, M.</p>
+</li>
+<li>
+<p>A bug is defined as incorrect behavior by a program, while a vulnerability is defined as a security exploit in a program. A crash is defined as unexpected program termination due to violations of memory safety.</p>
+</li>
+<li>
+<p>Scoring will continue after each round ends as judges review submissions and performance results are updated. We will announce once final scores are available.</p>
+</li>
+</ul>
+<h2><a id="Scoring_for_Builder_Teams_10"></a>Scoring for Builder Teams</h2>
+<h3><a id="Buildit_Round_12"></a>Build-it Round</h3>
+<ol>
+<li>
+<p><strong>Eligibility tests (5*M pts total).</strong> All builder teams’ submissions must pass a set of tests to be eligible. If you correctly pass all tests, you get 5*M points.</p>
+</li>
+<li>
+<p><strong>Optional tests (M/2 pts each + performance bonuses).</strong> These tests aren’t necessary for eligibility, but they’re a great way to get extra points. There are two types:</p>
+<ul>
+<li><strong>Correctness tests</strong> — These test the correctness of specification features. Each is worth M/2 points each.</li>
+<li><strong>Performance tests</strong> — These are larger tests that do more substantial work. For each test case, you get up to M extra points depending on how efficient your submission is. The amount of points you get is scaled linearly based on the fastest and slowest submissions. For example, if your submission takes 15 seconds to run, the fastest submission takes 10 seconds to run, and the slowest submission takes 20 seconds to run, you would receive M/2 points. Tying submissions get an equal number of points, and timeouts receive no points.</li>
+</ul>
+</li>
+</ol>
+<h3><a id="Breakit_Round_20"></a>Break-it Round</h3>
+<p>For every unique bug found against your submission during the Break-it phase, you will lose M/2 points. For every unique bug found against your submission that leads to a crash, you will lose M points. For every unique vulnerability found during the Break-it phase, you will lose 2*M points. (For what “unique” means, see the Fix-it scoring below.)</p>
+<h3><a id="Fixit_Round_24"></a>Fix-it Round</h3>
+<p>This is the chance for builders to prove that the bugs (and vulnerabilities) in their code found by the breaker teams correspond to the same bug (or vulnerability). If a builder can prove that multiple bugs (and vulnerabilities) are the same, the builder team will gain points back such that they are only penalized for the bug (or vulnerability) once.</p>
+<p>To show that multiple reported bugs are actually the “same,” submit a single, small code patch that fixes the bug. Judges will uses these fixes to determine which bugs are morally the same.</p>
+<p>Be careful to only fix one unique bug (or vulnerability) at a time. You will be penalized if you fix more than one unique bug (or vulnerability) at a time.</p>
+<h2><a id="Scoring_for_Breaker_Teams_32"></a>Scoring for Breaker Teams</h2>
+<h3><a id="Buildit_Round_34"></a>Build-it Round</h3>
+<p>Breakers receive M/2 points for identifying a bug in the oracle implementation. Points will only be awarded to the first breaker team that reports the bug. To report a bug in the oracle implementation, email us with a description of the bug, links to relevant oracle submissions, your team name, and team id.</p>
+<h3><a id="Breakit_Round_38"></a>Break-it Round</h3>
+<p>The total number of points received for any bug found is M/2, where M is the number of teams. The points from a given bug are split evenly among all the breaker teams who find it. The points from bugs that lead to crashes are similar except the total number of points is M. The points from vulnerabilities are similar except the total number of points is 2*M.</p>
+<p>Example — So if there were 100 teams, then each bug would fetch up to 50 points. If there were 5 breaker teams who found a given bug, then they would each get 10 points; if you are the only team to find a given bug, you’d get the full 50 points.</p>
+<h3><a id="Fixit_Round_44"></a>Fix-it Round</h3>
+<p>Builder teams will be unifying bugs and vulnerabilities so expect your score to go down if you found the same bugs and vulnerabilities as other breaker teams.</p>
+<h3><a id="Teams_48"></a>Teams</h3>
+<p>Teams are limited to five members for the Coursera capstone. If you are looking for teammates, please fill out the survey on Coursera and coordinate on the Coursera forums.</p>
+<p>When your team signs up for a contest, your team is automatically signed up as a builder and a breaker. Your builder and breaker scores are independent though, so you can choose to participate as a builder, a breaker, or both.</p>
+<h2><a id="Rules_54"></a>Rules</h2>
+<h3><a id="General_56"></a>General</h3>
+<ul>
+<li>
+<p>Do not hack the contest’s infrastructure, or you will be disqualified.</p>
+</li>
+<li>
+<p>A minimum number of 30 registered teams, 10 teams that pass required build-it tests, and 10 teams that submit a break-it-bug are required to award prizes to participants.
+Build-it</p>
+</li>
+<li>
+<p>Do not obfuscate the source code in your submissions and answer all survey questions, or you will be disqualified.</p>
+</li>
+<li>
+<p>Make sure that your build-it submissions do not time out. You will be given 10 minutes before a single test times out and 30 minutes for all tests to complete before timing out.</p>
+</li>
+<li>
+<p>Beware of changing your build submission between the build-it and fix-it rounds because if you make changes, they will be considered as part of your first fix, which may end up disqualifying it.</p>
+</li>
+</ul>
+<h3><a id="Breakit_69"></a>Break-it</h3>
+<ul>
+<li>
+<p>You will only be allowed to make 5 submissions against a single team.</p>
+</li>
+<li>
+<p>You will only be allowed to make one integrity submission and one confidentiality submission against a single team.</p>
+</li>
+</ul>
+<h3><a id="Fixit_75"></a>Fix-it</h3>
+<ul>
+<li>Only fix a single bug (or vulnerability) at a time.</li>
+</ul>
+
+</body></html>
