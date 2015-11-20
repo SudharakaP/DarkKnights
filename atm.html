@@ -34,20 +34,24 @@
       </ul>
 
       <h2><a id="Modes_of_Operation_25"></a>Modes of Operation</h2>
-<p>In addition to the account name, an invocation must provide a “mode of operation”. Each of the above 4 invocations uses one such mode; these are enumerated below.</p>
-<ul>
-<li>
-<p><code>-n &lt;balance&gt;</code>: Create a new account with the given balance. The account must be unique (ie, the account must not already exist). The balance must be greater than or equal to 10.00. The given card file must not already exist. If any of these conditions do not hold, <code>atm</code> exits with a return code of 255. On success, both <code>atm</code> and <code>bank</code> print the account and initial balance to standard output, encoded as JSON. The account name is a JSON string with key “account”, and the initial balance is a JSON number with key “initial_balance” (Example: <code>{&quot;account&quot;:&quot;55555&quot;,&quot;initial_balance&quot;:10.00}</code>). In addition, atm creates the card file for the new account (think of this as like an auto-generated pin).</p>
-</li>
-<li>
-<p><code>-d &lt;amount&gt;</code>: Deposit the amount of money specified. The amount must be greater than 0.00. The specified account must exist, and the <em>card file</em> must be associated with the given account (i.e., it must be the same file produced by <code>atm</code> when the account was created). If any of these conditions do not hold, <code>atm</code> exits with a return code of 255. On success, both <code>atm</code> and <code>bank</code> print the account and deposit amount to standard output, encoded as JSON. The account name is a JSON string with key “account”, and the deposit amount is a JSON number with key “deposit” (Example: <code>{&quot;account&quot;:&quot;55555&quot;,&quot;deposit&quot;:20.00}</code>).</p>
-</li>
-<li>
-<p><code>-w &lt;amount&gt;</code>: Withdraw the amount of money specified. The amount must be greater than 0.00, and the remaining balance must be nonnegative. The <em>card file</em> must be associated with the specified account (i.e., it must be the same file produced by <code>atm</code> when the account was created). The ATM exits with a return code of 255 if any of these conditions are not true. On success, both <code>atm</code> and <code>bank</code> print the account and withdraw amount to standard output, encoded as JSON. The account name is a JSON string with key “account”, and the withdraw amount is a JSON number with key “withdraw” (Example: <code>{&quot;account&quot;:&quot;55555&quot;,&quot;withdraw&quot;:15.00}</code>).</p>
-</li>
-<li>
-<p><code>-g</code>: Get the current balance of the account. The specified account must exist, and the <em>card file</em> must be associated with the account. Otherwise, <code>atm</code> exits with a return code of 255. On success, both <code>atm</code> and <code>bank</code> print the account and balance to stdout, encoded as JSON. The account name is a JSON string with key “account”, and the balance is a JSON number with key “balance” (Example: <code>{&quot;account&quot;:&quot;55555&quot;,&quot;balance&quot;:43.63}</code>).</p>
-</li>
-</ul>
+      <p>In addition to the account name, an invocation must provide a “mode of operation”. Each of the above 4 invocations uses one such mode; these are enumerated below.</p>
+
+      <ul>
+        <li>
+          <p><code>-n &lt;balance&gt;</code>: Create a new account with the given balance. The account must be unique (ie, the account must not already exist). The balance must be greater than or equal to 10.00. The given card file must not already exist. If any of these conditions do not hold, <code>atm</code> exits with a return code of 255. On success, both <code>atm</code> and <code>bank</code> print the account and initial balance to standard output, encoded as JSON. The account name is a JSON string with key “account”, and the initial balance is a JSON number with key “initial_balance” (Example: <code>{&quot;account&quot;:&quot;55555&quot;,&quot;initial_balance&quot;:10.00}</code>). In addition, atm creates the card file for the new account (think of this as like an auto-generated pin).</p>
+        </li>
+        
+        <li>
+          <p><code>-d &lt;amount&gt;</code>: Deposit the amount of money specified. The amount must be greater than 0.00. The specified account must exist, and the <em>card file</em> must be associated with the given account (i.e., it must be the same file produced by <code>atm</code> when the account was created). If any of these conditions do not hold, <code>atm</code> exits with a return code of 255. On success, both <code>atm</code> and <code>bank</code> print the account and deposit amount to standard output, encoded as JSON. The account name is a JSON string with key “account”, and the deposit amount is a JSON number with key “deposit” (Example: <code>{&quot;account&quot;:&quot;55555&quot;,&quot;deposit&quot;:20.00}</code>).</p>
+        </li>
+
+        <li>
+          <p><code>-w &lt;amount&gt;</code>: Withdraw the amount of money specified. The amount must be greater than 0.00, and the remaining balance must be nonnegative. The <em>card file</em> must be associated with the specified account (i.e., it must be the same file produced by <code>atm</code> when the account was created). The ATM exits with a return code of 255 if any of these conditions are not true. On success, both <code>atm</code> and <code>bank</code> print the account and withdraw amount to standard output, encoded as JSON. The account name is a JSON string with key “account”, and the withdraw amount is a JSON number with key “withdraw” (Example: <code>{&quot;account&quot;:&quot;55555&quot;,&quot;withdraw&quot;:15.00}</code>).</p>
+        </li>
+
+        <li>
+          <p><code>-g</code>: Get the current balance of the account. The specified account must exist, and the <em>card file</em> must be associated with the account. Otherwise, <code>atm</code> exits with a return code of 255. On success, both <code>atm</code> and <code>bank</code> print the account and balance to stdout, encoded as JSON. The account name is a JSON string with key “account”, and the balance is a JSON number with key “balance” (Example: <code>{&quot;account&quot;:&quot;55555&quot;,&quot;balance&quot;:43.63}</code>).</p>
+        </li>
+      </ul>
 
 </body></html>
