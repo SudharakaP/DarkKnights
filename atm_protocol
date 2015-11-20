@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html><body id="preview">
+<h2><a id="Summary_0"></a>Summary</h2>
+<p>Players will implement an ATM communication protocol. There will be two programs. One program, called <code>atm</code>, will allow bank customers to withdraw and deposit money from their account. The other program, called <code>bank</code>, will run as a server that keeps track of customer balances.</p>
+<h2><a id="Security_Model_4"></a>Security Model</h2>
+<p><code>atm</code> and <code>bank</code> must be implemented such that only a customer with a correct <em>card file</em> can learn or modify the balance of their account, and only in an appropriate way (e.g., they may not withdraw more money than they have). In addition, an <code>atm</code> may only communicate with a <code>bank</code> if it and the <code>bank</code> agree on an <em>auth file</em>, which they use to mutually authenticate. The auth file will be shared between the <code>bank</code> and <code>atm</code> via a trusted channel unavailable to the attacker, and is used to set up secure communications.</p>
+<p>Since the ATM client is communicating with the <code>bank</code> server over the network, it is possible that there is a “man in the middle” that can observe and change the messages, or insert new messages. A “man in the middle” attacker can view all traffic transmitted between the <code>atm</code> and the <code>bank</code>. The “man in the middle” may send messages to either the <code>atm</code> or the <code>bank</code>.</p>
+<p>The source code for atm and bank will be available to attackers, but not the <em>auth file</em>. The <em>card file</em> may be available in some cases, depending on the kind of attack.</p>
+<h2><a id="Requirements_12"></a>Requirements</h2>
+<p>The specification details for each program are linked below.</p>
+<ul>
+<li><a href="https://github.com/SudharakaP/DarkKnights/wiki/Bank-Server">Bank Server</a></li>
+<li><a href="https://github.com/SudharakaP/DarkKnights/wiki/ATM-Client">ATM Client</a></li>
+</ul>
+<p>Here are some general requirements that apply to both atm and bank programs.</p>
+<h2><a id="Valid_Inputs_21"></a>Valid Inputs</h2>
+<ul>
+<li>
+<p>Any command-line input that is not valid according to the rules below should result with a return value of 255 from the invoked program and nothing should be output to <strong><em>stdout</em></strong>.</p>
+</li>
+<li>
+<p>Command line arguments must be <a href="http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap12.html">POSIX compliant</a> and each argument cannot exceed 4096 characters (with additional restrictions below). In particular, this allows command arguments specified as “-i 4000” to be provided without the space as “-i4000” or with extra spaces as in “-i 4000”. Arguments may appear in any order. You should not implement --, which is optional for POSIX compliance.</p>
+</li>
+<li>
+<p>Numeric inputs are positive and provided in decimal without any leading 0’s (should match <code>/(0|[1-9][0-9]*)/</code>). Thus “42” is a valid input number but the octal “052” or hexadecimal “0x2a” are not. Any reference to <strong>“number”</strong> below refers to this input specification.</p>
+</li>
+<li>
+<p>Balances and currency amounts are specified as a <strong>number</strong> indicating a whole amount and a fractional input separated by a period. The fractional input is in decimal and is always two digits and thus can include a leading 0 (should match <code>/[0-9]{2}/</code>). The interpretation of the fractional amount v is that of having value equal to v/100 of a whole amount (akin to cents and dollars in US currency). Command line input amounts are bounded from 0.00 to 4294967295.99 inclusively but an account may accrue any non-negative balance over multiple transactions.
+File names are restricted to underscores, hyphens, dots, digits, and lowercase alphabetical characters (each character should match <code>/[_\-\.0-9a-z]/</code>). File names are to be between 1 and 255 characters long. The special file names “.” and “…” are not allowed.</p>
+</li>
+<li>
+<p>Account names are restricted to same characters as file names but they are inclusively between 1 and 250 characters of length, and “.” and “…” are valid account names.</p>
+</li>
+<li>
+<p>IP addresses are restricted to IPv4 32-bit addresses and are provided on the command line in dotted decimal notation, i.e., four <strong>numbers</strong> between 0 and 255 separated by periods.</p>
+</li>
+<li>
+<p>Ports are specified as <strong>numbers</strong> between 1024 and 65535 inclusively.</p>
+</li>
+</ul>
+<h2><a id="Outputs_38"></a>Outputs</h2>
+<ul>
+<li>
+<p>Anything printed to <strong>stderr</strong> will be ignored (e.g., so detailed error messages could be printed there, if desired).</p>
+</li>
+<li>
+<p>All JSON output is printed on a single line and is followed by a newline.</p>
+</li>
+<li>
+<p>JSON outputs must show numbers (including potentially unbounded account balances) with full precision.</p>
+</li>
+<li>
+<p>Newlines are ‘\n’ – the ASCII character with code decimal 10.</p>
+</li>
+<li>
+<p>Both programs should <strong>explicitly flush stdout</strong> after every line printed.</p>
+</li>
+<li>
+<p>Successful exits should return exit code 0.</p>
+</li>
+</ul>
+<h2><a id="Errors_52"></a>Errors</h2>
+<h3><a id="Protocol_Error_54"></a>Protocol Error</h3>
+<ul>
+<li>
+<p>If an error is detected in the protocol’s communication, <code>atm</code> should exit with return code 63, while <code>bank</code> should print <strong>“protocol_error”</strong> to stdout (followed by a newline) and roll back (i.e., undo any changes made by) the current transaction.</p>
+</li>
+<li>
+<p>A timeout occurs if the other program does not respond within 10 seconds. If the <code>atm</code> observes the timeout, it should exit with return code 63, while if the <code>bank</code> observes it, it should print <strong>“protocol_error”</strong> to <strong>stdout</strong> (followed by a newline) and rollback the current transaction. The non-observing party need not do anything in particular.</p>
+</li>
+</ul>
+<h3><a id="Other_Errors_60"></a>Other Errors</h3>
+<ul>
+<li>All other errors, specified throughout this document or unrecoverable errors not explicitly discussed, should prompt the program to exit with return code 255.</li>
+</ul>
+<h2><a id="Oracle_64"></a>Oracle</h2>
+<ul>
+<li>
+<p>We provide an <code>oracle</code>, or reference implementation. This implementation will be use to adjudicate correctness-related error reports submitted during the Break-it round – in particular, if a submitted test fails on a particular submission, it must not fail on the <code>oracle</code>. (Bugs in the <code>oracle</code> are discussed below.)</p>
+</li>
+<li>
+<p>Contestants may query the <code>oracle</code> during the build-it round to clarify the expected behavior of the <code>atm</code> and <code>bank</code> programs. Queries are specified as a sequence of <code>atm</code> commands, submitted via the “Oracle submissions” link on the team participation page of the contest site. Here is an example query (this will make more sense if you read the specifications for the <code>atm</code> and <code>bank</code> programs first):</p>
+</li>
+</ul>
+<pre><code>[ 
+    {"<span class="hljs-attribute">input</span>":<span class="hljs-value">[<span class="hljs-string">"-p"</span>, <span class="hljs-string">"%PORT%"</span>, <span class="hljs-string">"-i"</span>, <span class="hljs-string">"%IP%"</span>, <span class="hljs-string">"-a"</span>, <span class="hljs-string">"ted"</span>, <span class="hljs-string">"-n"</span>, <span class="hljs-string">"10.30"</span>]</span>,"<span class="hljs-attribute">base64</span>":<span class="hljs-value"><span class="hljs-literal">false</span></span>}, 
+    {"<span class="hljs-attribute">input</span>":<span class="hljs-value">[<span class="hljs-string">"-p"</span>, <span class="hljs-string">"%PORT%"</span>, <span class="hljs-string">"-i"</span>, <span class="hljs-string">"%IP%"</span>, <span class="hljs-string">"-a"</span>, <span class="hljs-string">"ted"</span>, <span class="hljs-string">"-d"</span>, <span class="hljs-string">"5.00"</span>]</span>}, 
+    {"<span class="hljs-attribute">input</span>":<span class="hljs-value">[<span class="hljs-string">"-p"</span>, <span class="hljs-string">"%PORT%"</span>, <span class="hljs-string">"-i"</span>, <span class="hljs-string">"%IP%"</span>, <span class="hljs-string">"-a"</span>, <span class="hljs-string">"ted"</span>, <span class="hljs-string">"-g"</span>]</span>},
+    {"<span class="hljs-attribute">input</span>":<span class="hljs-value">[<span class="hljs-string">"LXA="</span>, <span class="hljs-string">"JVBPUlQl"</span>, <span class="hljs-string">"LWk="</span>, <span class="hljs-string">"JUlQJQ=="</span>, <span class="hljs-string">"LWE="</span>, <span class="hljs-string">"dGVk"</span>, <span class="hljs-string">"LWc="</span>]</span>,"<span class="hljs-attribute">base64</span>":<span class="hljs-value"><span class="hljs-literal">true</span></span>} 
+]
+</code></pre>
+<p>The oracle will provide outputs from the <code>atm</code> and <code>bank</code>. Here is an example for the previous query:</p>
+<pre><code>[
+    {
+        "<span class="hljs-attribute">bank</span>": <span class="hljs-value">{
+            "<span class="hljs-attribute">output</span>": <span class="hljs-value">{"<span class="hljs-attribute">initial_balance</span>": <span class="hljs-value"><span class="hljs-number">10.3</span></span>,"<span class="hljs-attribute">account</span>": <span class="hljs-value"><span class="hljs-string">"ted"</span></span>}
+        </span>}</span>,
+        "<span class="hljs-attribute">atm</span>": <span class="hljs-value">{
+            "<span class="hljs-attribute">exit</span>": <span class="hljs-value"><span class="hljs-number">0</span></span>,
+            "<span class="hljs-attribute">output</span>": <span class="hljs-value">{"<span class="hljs-attribute">initial_balance</span>": <span class="hljs-value"><span class="hljs-number">10.3</span></span>,"<span class="hljs-attribute">account</span>": <span class="hljs-value"><span class="hljs-string">"ted"</span></span>}
+        </span>}
+    </span>},
+    {
+        "<span class="hljs-attribute">bank</span>": <span class="hljs-value">{
+            "<span class="hljs-attribute">output</span>": <span class="hljs-value">{"<span class="hljs-attribute">deposit</span>": <span class="hljs-value"><span class="hljs-number">5</span></span>,"<span class="hljs-attribute">account</span>": <span class="hljs-value"><span class="hljs-string">"ted"</span>
+            </span>}
+        </span>}</span>,
+        "<span class="hljs-attribute">atm</span>": <span class="hljs-value">{
+            "<span class="hljs-attribute">exit</span>": <span class="hljs-value"><span class="hljs-number">0</span></span>,
+            "<span class="hljs-attribute">output</span>": <span class="hljs-value">{"<span class="hljs-attribute">deposit</span>": <span class="hljs-value"><span class="hljs-number">5</span></span>,"<span class="hljs-attribute">account</span>": <span class="hljs-value"><span class="hljs-string">"ted"</span></span>}
+        </span>}
+    </span>},
+    {
+        "<span class="hljs-attribute">bank</span>": <span class="hljs-value">{
+            "<span class="hljs-attribute">output</span>": <span class="hljs-value">{"<span class="hljs-attribute">balance</span>": <span class="hljs-value"><span class="hljs-number">15.3</span></span>,"<span class="hljs-attribute">account</span>": <span class="hljs-value"><span class="hljs-string">"ted"</span></span>}
+        </span>}</span>,
+        "<span class="hljs-attribute">atm</span>": <span class="hljs-value">{
+            "<span class="hljs-attribute">exit</span>": <span class="hljs-value"><span class="hljs-number">0</span></span>,
+            "<span class="hljs-attribute">output</span>": <span class="hljs-value">{"<span class="hljs-attribute">balance</span>": <span class="hljs-value"><span class="hljs-number">15.3</span></span>,"<span class="hljs-attribute">account</span>": <span class="hljs-value"><span class="hljs-string">"ted"</span></span>}
+        </span>}
+    </span>},
+    {
+        "<span class="hljs-attribute">bank</span>": <span class="hljs-value">{
+            "<span class="hljs-attribute">output</span>": <span class="hljs-value">{"<span class="hljs-attribute">balance</span>": <span class="hljs-value"><span class="hljs-number">15.3</span></span>,"<span class="hljs-attribute">account</span>": <span class="hljs-value"><span class="hljs-string">"ted"</span></span>}
+        </span>}</span>,
+        "<span class="hljs-attribute">atm</span>": <span class="hljs-value">{
+            "<span class="hljs-attribute">exit</span>": <span class="hljs-value"><span class="hljs-number">0</span></span>,
+            "<span class="hljs-attribute">output</span>": <span class="hljs-value">{"<span class="hljs-attribute">balance</span>": <span class="hljs-value"><span class="hljs-number">15.3</span></span>,"<span class="hljs-attribute">account</span>": <span class="hljs-value"><span class="hljs-string">"ted"</span></span>}
+        </span>}
+    </span>}
+]
+</code></pre>
+<p>In general, a test must begin with account creation, so that the atm program creates a <em>card file</em>, which can be used on subsequent interactions. Though we have not shown it, you can also pass the cardfile explicitly during a test, i.e., using the <code>-c</code> option.</p>
+<p>The <code>bank</code> will run at a dynamically chosen IP address, listening on a dynamically chosen port. Since this information cannot be known when writing the query, you instead specify these values using the following variables:</p>
+<ul>
+<li>%IP% - IP address of the bank server</li>
+<li>%PORT% - TCP port of the bank server</li>
+</ul>
+<p>Each “input” is the argument list passed to <code>atm</code>. Queries may specify inputs using base64-encoded values by by providing the optional boolean field “base64”.</p>
+<h2><a id="Changes_and_Oracle_Updates_130"></a>Changes and Oracle Updates</h2>
+<p>There will inevitably be changes to the specification and oracle implementation during the contest as unclear assumptions and mistakes on our part are uncovered. We apologize in advance!</p>
+<p>All changes will be summarized at the top of this page. Breaker teams will receive (M/2) points for identifying bugs in the oracle implementation. Points will only be awarded to the first breaker team that reports a particular bug. To report a bug in the oracle implementation, email us at <a href="mailto:info@builditbreakit.org">info@builditbreakit.org</a> with a description of the bug, links to relevant oracle submissions on the contest website, your team name, and team id.</p>
+<h2><a id="Buildit_Round_Submission_136"></a>Build-it Round Submission</h2>
+<p>Each build-it team should initialize a git repository on either <a href="https://github.com/">github</a> or <a href="https://bitbucket.org/">bitbucket</a> or <a href="https://about.gitlab.com/">gitlab</a> and share it with the bibifi user on those services. Create a directory named <code>build</code> in the top-level directory of this repository and commit your code into that folder. Your submission will be scored after every push to the repository. (Beware making your repository public, or other contestants might be able to see it!)</p>
+<p>To score a submission, an automated system will first invoke <code>make</code> in the <code>build</code> directory of your submission. The only requirement on <code>make</code> is that it must function without internet connectivity, and that it must return within ten minutes. Moreover, it must be the case that your software is actually built, through initiation of <code>make</code>, from source (not including libraries you might use). Submitting binaries (only) is not acceptable.</p>
+<p>Once make finishes, <code>atm</code> and <code>bank</code> should be executable files within the <code>build</code> directory. An automated system will invoke them with a variety of options and measure their responses. The executables must be able to be run from any working directory. If your executables are bash scripts, you may find the following resource helpful.</p>
+<h2><a id="Examples_144"></a>Examples</h2>
+<p>Here is an example of how to use <code>atm</code> and <code>bank</code>. First, do some setup and run <code>bank</code>.</p>
+<pre><code>$ mkdir <span class="hljs-keyword">bankdir; </span>mv <span class="hljs-keyword">bank </span><span class="hljs-keyword">bankdir/; </span>cd <span class="hljs-keyword">bankdir/; </span>./<span class="hljs-keyword">bank </span>-s <span class="hljs-keyword">bank.auth </span>&amp;<span class="hljs-comment">; cd ..</span>
+<span class="hljs-label">created</span>
+</code></pre>
+<p>Now set up the <code>atm</code>.</p>
+<pre><code>$ <span class="hljs-built_in">mkdir</span> atmdir; <span class="hljs-keyword">cp</span> bankdir/bank.auth atmdir/; mv atm atmdir/; <span class="hljs-keyword">cd</span> atmdir
+</code></pre>
+<p>Create an account ‘bob’ with balance $1000.00 (There are two outputs because one is from the <code>bank</code> which is running in the same shell).</p>
+<pre><code>$ ./atm -s <span class="hljs-keyword">bank.auth </span>-c <span class="hljs-keyword">bob.card </span>-a <span class="hljs-keyword">bob </span>-n <span class="hljs-number">1000</span>.<span class="hljs-number">00</span>
+{<span class="hljs-string">"account"</span>:<span class="hljs-string">"bob"</span>,<span class="hljs-string">"initial_balance"</span>:<span class="hljs-number">1000</span>}
+{<span class="hljs-string">"account"</span>:<span class="hljs-string">"bob"</span>,<span class="hljs-string">"initial_balance"</span>:<span class="hljs-number">1000</span>}
+</code></pre>
+<p>Deposit $100.</p>
+<pre><code>$ ./atm -c bob.card -a bob -d <span class="hljs-number">100.00</span>
+{<span class="hljs-string">"account"</span>:<span class="hljs-string">"bob"</span>,<span class="hljs-string">"deposit"</span>:<span class="hljs-number">100</span>}
+{<span class="hljs-string">"account"</span>:<span class="hljs-string">"bob"</span>,<span class="hljs-string">"deposit"</span>:<span class="hljs-number">100</span>}
+</code></pre>
+<p>Withdraw $63.10.</p>
+<pre><code>$ ./atm -c bob.card -a bob -w <span class="hljs-number">63.10</span>
+{<span class="hljs-string">"account"</span>:<span class="hljs-string">"bob"</span>,<span class="hljs-string">"withdraw"</span>:<span class="hljs-number">63.1</span>}
+{<span class="hljs-string">"account"</span>:<span class="hljs-string">"bob"</span>,<span class="hljs-string">"withdraw"</span>:<span class="hljs-number">63.1</span>}
+</code></pre>
+<p>Attempt to withdraw $2000, which fails since ‘bob’ does not have a sufficient balance.</p>
+<pre><code><span class="hljs-variable">$ </span>./atm -c bob.card -a bob -w <span class="hljs-number">2000.00</span>
+<span class="hljs-variable">$ </span>echo <span class="hljs-variable">$?</span>
+<span class="hljs-number">255</span>
+</code></pre>
+<p>Attempt to create another account ‘bob’, which fails since the account ‘bob’ already exists.</p>
+<pre><code><span class="hljs-variable">$ </span>./atm -a bob -n <span class="hljs-number">2000.00</span>
+<span class="hljs-variable">$ </span>echo <span class="hljs-variable">$?</span>
+<span class="hljs-number">255</span>
+</code></pre>
+<p>Create an account ‘alice’ with balance $1500.</p>
+<pre><code>$ ./atm -a alice -n <span class="hljs-number">1500.00</span>
+{<span class="hljs-string">"account"</span>:<span class="hljs-string">"alice"</span>,<span class="hljs-string">"initial_balance"</span>:<span class="hljs-number">1500</span>}
+{<span class="hljs-string">"account"</span>:<span class="hljs-string">"alice"</span>,<span class="hljs-string">"initial_balance"</span>:<span class="hljs-number">1500</span>}
+</code></pre>
+<p>Bob attempts to access alice’s balance with his <em>card</em>, which fails.</p>
+<pre><code><span class="hljs-variable">$ </span>./atm -a alice -c bob.card -g
+<span class="hljs-variable">$ </span>echo <span class="hljs-variable">$?</span>
+<span class="hljs-number">255</span>
+</code></pre>
+<h2><a id="A_note_on_concurrent_transactions_198"></a>A note on concurrent transactions</h2>
+<p>In principle, the <code>bank</code> could accept transaction requests from multiple ATMs concurrently, if it chose to—there is no requirement that it must. If it does, the order that these transactions take effect is non-deterministic, but atomic. For example, if ATM #1 requested a deposit of $50 to Bob’s account and ATM #2 requested a withdrawal of $25 from Bob’s account, those two requests could take effect in either order, but when they complete Bob should always be $25 richer. Note that an atomic transaction includes both changes/accesses to the balance and the corresponding I/O. As such, the order of any printed statements about events must match the order the events actually took place.</p>
+<p>Keep in mind that the contest provides no way to test concurrent transactions. Tests are sequences of synchronous ATM commands. During the break-it round, tests also involve a “man in the middle” (MITM) which could introduce concurrency (see the description of the attacker model), but the MITM will never have direct access to the <em>card file</em> or <em>auth file</em>, so its ability to initiate concurrent transactions is more limited than the ATM.</p>
+
+</body></html>
