@@ -1,0 +1,46 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Untitled Document.md</title><style></style></head><body id="preview">
+<h2><a id="atm_0"></a>atm</h2>
+<pre><code>atm [-s &lt;auth-file&gt;] [-<span class="hljs-tag">i</span> &lt;ip-address&gt;] [-<span class="hljs-tag">p</span> &lt;port&gt;] [-c &lt;card-file&gt;] -<span class="hljs-tag">a</span> &lt;account&gt; -n &lt;balance&gt;
+atm [-s &lt;auth-file&gt;] [-<span class="hljs-tag">i</span> &lt;ip-address&gt;] [-<span class="hljs-tag">p</span> &lt;port&gt;] [-c &lt;card-file&gt;] -<span class="hljs-tag">a</span> &lt;account&gt; -d &lt;amount&gt;
+atm [-s &lt;auth-file&gt;] [-<span class="hljs-tag">i</span> &lt;ip-address&gt;] [-<span class="hljs-tag">p</span> &lt;port&gt;] [-c &lt;card-file&gt;] -<span class="hljs-tag">a</span> &lt;account&gt; -w &lt;amount&gt;
+atm [-s &lt;auth-file&gt;] [-<span class="hljs-tag">i</span> &lt;ip-address&gt;] [-<span class="hljs-tag">p</span> &lt;port&gt;] [-c &lt;card-file&gt;] -<span class="hljs-tag">a</span> &lt;account&gt; -g
+</code></pre>
+<p><code>atm</code> is a client program that simulates an ATM by providing a mechanism for customers to interact with their bank accounts stored on the bank server. <code>atm</code> allows customers to create new accounts, deposit money, withdraw funds, and check their balances. In all cases, these functions are achieved via communiations with the <code>bank</code>. <code>atm</code> cannot store any state or write to any files except the <em>card-file</em>. The <em>card-file</em> can be viewed as the “pin code” for one’s account; there is one <em>card file</em> per account. Card files are created when <code>atm</code> is invoked with <code>-n</code> to create a new account; otherwise, card files are only read, and not modified.</p>
+<p>Any invocation of the <code>atm</code> which does not follow the four enumerated possibilities above should exit with return code 255 (printing nothing). Noncompliance includes a missing account or mode of operation and duplicated parameters. Note that parameters may be specified in any order.</p>
+<h2><a id="Required_Parameter_12"></a>Required Parameter</h2>
+<ul>
+<li>
+<p><code>-a &lt;account&gt;</code>: The customer’s account name. (The format for the account is given on the main page.)
+Optional Parameters</p>
+</li>
+<li>
+<p><code>-s &lt;auth-file&gt;</code>: The authentication file that <code>bank</code> creates for the atm. If <code>-s</code> is not specified, the default filename is “bank.auth” (in the current working directory). If the specified file cannot be opened, the atm exits with a return code of 255.</p>
+</li>
+<li>
+<p><code>-i &lt;ip-address&gt;</code>: The IP address that <code>bank</code> is running on. The default value is “127.0.0.1”.</p>
+</li>
+<li>
+<p><code>-p &lt;port&gt;</code> The TCP port that <code>bank</code> is listening on. The default is 3000.</p>
+</li>
+<li>
+<p><code>-c &lt;card-file&gt;</code> The customer’s <code>atm</code> <em>card file</em>. The default value is the account name prepended to “.card” (&quot;&lt;account&gt;.card&quot;). For example, if the account name was 55555, the default card file is “55555.card”.</p>
+</li>
+</ul>
+<h2><a id="Modes_of_Operation_25"></a>Modes of Operation</h2>
+<p>In addition to the account name, an invocation must provide a “mode of operation”. Each of the above 4 invocations uses one such mode; these are enumerated below.</p>
+<ul>
+<li>
+<p><code>-n &lt;balance&gt;</code>: Create a new account with the given balance. The account must be unique (ie, the account must not already exist). The balance must be greater than or equal to 10.00. The given card file must not already exist. If any of these conditions do not hold, <code>atm</code> exits with a return code of 255. On success, both <code>atm</code> and <code>bank</code> print the account and initial balance to standard output, encoded as JSON. The account name is a JSON string with key “account”, and the initial balance is a JSON number with key “initial_balance” (Example: <code>{&quot;account&quot;:&quot;55555&quot;,&quot;initial_balance&quot;:10.00}</code>). In addition, atm creates the card file for the new account (think of this as like an auto-generated pin).</p>
+</li>
+<li>
+<p><code>-d &lt;amount&gt;</code>: Deposit the amount of money specified. The amount must be greater than 0.00. The specified account must exist, and the <em>card file</em> must be associated with the given account (i.e., it must be the same file produced by <code>atm</code> when the account was created). If any of these conditions do not hold, <code>atm</code> exits with a return code of 255. On success, both <code>atm</code> and <code>bank</code> print the account and deposit amount to standard output, encoded as JSON. The account name is a JSON string with key “account”, and the deposit amount is a JSON number with key “deposit” (Example: <code>{&quot;account&quot;:&quot;55555&quot;,&quot;deposit&quot;:20.00}</code>).</p>
+</li>
+<li>
+<p><code>-w &lt;amount&gt;</code>: Withdraw the amount of money specified. The amount must be greater than 0.00, and the remaining balance must be nonnegative. The <em>card file</em> must be associated with the specified account (i.e., it must be the same file produced by <code>atm</code> when the account was created). The ATM exits with a return code of 255 if any of these conditions are not true. On success, both <code>atm</code> and <code>bank</code> print the account and withdraw amount to standard output, encoded as JSON. The account name is a JSON string with key “account”, and the withdraw amount is a JSON number with key “withdraw” (Example: <code>{&quot;account&quot;:&quot;55555&quot;,&quot;withdraw&quot;:15.00}</code>).</p>
+</li>
+<li>
+<p><code>-g</code>: Get the current balance of the account. The specified account must exist, and the <em>card file</em> must be associated with the account. Otherwise, <code>atm</code> exits with a return code of 255. On success, both <code>atm</code> and <code>bank</code> print the account and balance to stdout, encoded as JSON. The account name is a JSON string with key “account”, and the balance is a JSON number with key “balance” (Example: <code>{&quot;account&quot;:&quot;55555&quot;,&quot;balance&quot;:43.63}</code>).</p>
+</li>
+</ul>
+
+</body></html>
