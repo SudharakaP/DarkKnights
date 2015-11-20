@@ -43,6 +43,6 @@ All bugs and vulnerabilities submitted against our team and their status is give
 [sudharaka]: <https://ca.linkedin.com/in/sudharakap>
 [yannis]: <https://gr.linkedin.com/in/ypappas>
 [yogesh]: <https://in.linkedin.com/in/sriyogeshdorbala>
-[atm_prot]: <https://github.com/SudharakaP/DarkKnights/blob/master/atm.md>
+[atm_prot]: <https://github.com/SudharakaP/DarkKnights/wiki/Programming-Problem-(ATM-Protocol)>
 [contest_details]: <https://github.com/SudharakaP/DarkKnights/wiki/Contest-Details>
 
