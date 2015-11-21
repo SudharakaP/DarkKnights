@@ -11,7 +11,6 @@
         <title>Darkknights by SudharakaP</title>
     </head>
     
-    <div class="container">
     <body id="preview">
         
         <header>
@@ -28,6 +27,7 @@
           </div>
         </header>
         
+        <div class="container">
         <h2><a id="Summary_0"></a>Summary</h2>
         <p>Players will implement an ATM communication protocol. There will be two programs. One program, called <code>atm</code>, will allow bank customers to withdraw and deposit money from their account. The other program, called <code>bank</code>, will run as a server that keeps track of customer balances.</p>
         <h2><a id="Security_Model_4"></a>Security Model</h2>
@@ -253,6 +253,6 @@
 
     <p>In principle, the <code>bank</code> could accept transaction requests from multiple ATMs concurrently, if it chose to—there is no requirement that it must. If it does, the order that these transactions take effect is non-deterministic, but atomic. For example, if ATM #1 requested a deposit of $50 to Bob’s account and ATM #2 requested a withdrawal of $25 from Bob’s account, those two requests could take effect in either order, but when they complete Bob should always be $25 richer. Note that an atomic transaction includes both changes/accesses to the balance and the corresponding I/O. As such, the order of any printed statements about events must match the order the events actually took place.</p>
     <p>Keep in mind that the contest provides no way to test concurrent transactions. Tests are sequences of synchronous ATM commands. During the break-it round, tests also involve a “man in the middle” (MITM) which could introduce concurrency (see the description of the attacker model), but the MITM will never have direct access to the <em>card file</em> or <em>auth file</em>, so its ability to initiate concurrent transactions is more limited than the ATM.</p>
-
-</body></div>
+</div>
+</body>
 </html>
