@@ -1,5 +1,4 @@
 # DarkKnights (Coursera Capstone Project Fall 2015)
-http://sudharakap.github.io/DarkKnights/
 
 <p align="center">
   <img src = "https://docs.google.com/drawings/d/13v-l8ccPZwPVk-PVB1B6ZVM8lSgOs2FZkcAnzdkE4sI/pub?w=482&h=344"/>
@@ -7,7 +6,9 @@ http://sudharakap.github.io/DarkKnights/
 
 ## Contest Overview
 
-The **Build it Break it Fix it** security contest aims to teach students to write more secure programs. The contest evaluates participants' abilities to develop secure and efficient programs. The contest is broken up into three rounds that take place over consecutive weekends. During the Build It round, builders write software that implements the system prescribed by the contest. In the Break It round, breakers find as many flaws as possible in the Build It implementations submitted by other teams. During the Fix It round, builders attempt to fix any problems in their Build It submissions that were identified by other breaker teams.
+The **Build it Break it Fix it** security contest aims to teach students to write more secure programs. The contest evaluates participants' abilities to develop secure and efficient programs. The contest is broken up into three rounds that take place over consecutive weekends. During the Build It round, builders write software that implements the system prescribed by the contest. In the Break It round, breakers find as many flaws as possible in the Build It implementations submitted by other teams. During the Fix It round, builders attempt to fix any problems in their Build It submissions that were identified by other breaker teams. 
+
+More information can also be found in the GitHub pages, http://sudharakap.github.io/DarkKnights/
 
 ## Team Details
 
